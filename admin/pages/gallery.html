@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gallery — Apex Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+  <style>
+    /* ── GALLERY-SPECIFIC ───────────────────────────────── */
+
+    /* Stats row */
+    .gallery-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .gallery-stats-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .gallery-stats-row { grid-template-columns: 1fr 1fr; } }
+
+    .mini-stat {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mini-stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .mini-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text);
+    }
+    .mini-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Toolbar */
+    .gallery-toolbar {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .gallery-toolbar .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .gallery-toolbar .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      font-size: 0.9rem;
+    }
+    .gallery-toolbar .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .gallery-toolbar .search-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+      background: #fff;
+    }
+    .filter-select {
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-family: var(--font);
+      color: var(--text-2);
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .filter-select:focus { border-color: var(--orange); }
+
+    /* View toggle */
+    .view-toggle { display: flex; gap: 4px; }
+    .view-btn {
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .view-btn.active, .view-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+      background: var(--orange-pale);
+    }
+
+    /* Table card */
+    .table-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .table-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .table-card-count {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 2px 10px;
+    }
+
+    /* Thumbnail in table */
+    .gallery-thumb {
+      width: 60px;
+      height: 46px;
+      border-radius: 7px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      display: block;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .gallery-thumb:hover {
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    }
+    .gallery-thumb-placeholder {
+      width: 60px;
+      height: 46px;
+      border-radius: 7px;
+      background: var(--orange-pale);
+      border: 1px solid var(--orange-pale2);
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+    }
+
+    /* ── GALLERY GRID VIEW ─────────────────────────────── */
+    .gallery-masonry {
+      column-count: 4;
+      column-gap: 14px;
+    }
+    @media (max-width: 1100px) { .gallery-masonry { column-count: 3; } }
+    @media (max-width: 768px)  { .gallery-masonry { column-count: 2; } }
+    @media (max-width: 480px)  { .gallery-masonry { column-count: 1; } }
+
+    .gallery-masonry-item {
+      break-inside: avoid;
+      margin-bottom: 14px;
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .gallery-masonry-item:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      transform: translateY(-2px);
+    }
+    .gallery-masonry-item img {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+    }
+    .gallery-masonry-item .gallery-item-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.72) 0%, transparent 55%);
+      opacity: 0;
+      transition: opacity .2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 12px;
+    }
+    .gallery-masonry-item:hover .gallery-item-overlay { opacity: 1; }
+    .gallery-item-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .gallery-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .gallery-item-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.72rem;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .gallery-item-btn:hover { opacity: .85; }
+    .gallery-item-btn.view { background: rgba(255,255,255,.2); color: #fff; backdrop-filter: blur(4px); }
+    .gallery-item-btn.del  { background: var(--red); color: #fff; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state-icon { font-size: 2.8rem; margin-bottom: 12px; }
+    .empty-state-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+    .empty-state-text  { font-size: 0.82rem; text-align: center; max-width: 280px; }
+
+    /* Empty in table */
+    .empty-row td { text-align: center; padding: 60px 20px !important; }
+    .empty-row .empty-state { padding: 0; }
+
+    /* Skeleton shimmer */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--border-light) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* Upload zone in modal */
+    .modal-wide { max-width: 580px; }
+
+    /* Lightbox */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.88);
+      z-index: 9000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .lightbox-overlay.open { display: flex; }
+    .lightbox-inner {
+      position: relative;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .lightbox-inner img {
+      max-width: 100%;
+      max-height: 75vh;
+      border-radius: var(--radius);
+      object-fit: contain;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .lightbox-caption {
+      margin-top: 14px;
+      color: rgba(255,255,255,.85);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      opacity: .75;
+      transition: opacity .15s;
+    }
+    .lightbox-close:hover { opacity: 1; }
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,.12);
+      border: none;
+      color: #fff;
+      font-size: 1.4rem;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: grid; place-items: center;
+      transition: background .15s;
+      backdrop-filter: blur(4px);
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,.22); }
+    .lightbox-prev { left: -56px; }
+    .lightbox-next { right: -56px; }
+    @media (max-width: 700px) {
+      .lightbox-prev { left: -4px; }
+      .lightbox-next { right: -4px; }
+    }
+
+    /* Pagination */
+    .pagination { display: flex; align-items: center; gap: 4px; padding: 14px 20px; border-top: 1px solid var(--border); }
+    .page-info { font-size: 0.82rem; color: var(--text-muted); margin-right: auto; }
+    .page-btn {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: var(--font);
+      color: var(--text-2);
+      display: grid; place-items: center;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+    .page-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; font-weight: 600; }
+    .page-btn:disabled { opacity: .4; cursor: default; }
+
+    /* Responsive table */
+    @media (max-width: 768px) {
+      .data-table th:nth-child(n+4),
+      .data-table td:nth-child(n+4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ── SIDEBAR ROOT ──────────────────────────────────── -->
+  <div id="sidebar-root"></div>
+
+  <!-- ── MAIN CONTENT ─────────────────────────────────── -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger">☰</button>
+        <div>
+          <div class="topbar-title">Gallery Management</div>
+          <div class="topbar-breadcrumb">Admin / Gallery</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openUploadModal()">
+          + Upload Images
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Stats -->
+      <div class="gallery-stats-row">
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--orange-pale)">🖼️</div>
+          <div>
+            <div class="mini-stat-value" id="stat-total">—</div>
+            <div class="mini-stat-label">Total Images</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--green-bg)">🗂️</div>
+          <div>
+            <div class="mini-stat-value" id="stat-categories">—</div>
+            <div class="mini-stat-label">Categories</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--blue-bg)">📅</div>
+          <div>
+            <div class="mini-stat-value" id="stat-today">—</div>
+            <div class="mini-stat-label">Added Today</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--yellow-bg)">💾</div>
+          <div>
+            <div class="mini-stat-value" id="stat-size">—</div>
+            <div class="mini-stat-label">Total Size</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="gallery-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search by title, category, tags…" />
+        </div>
+        <select id="filter-category" class="filter-select">
+          <option value="">All Categories</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" id="view-grid-btn" title="Grid view" onclick="setView('grid')">⊞</button>
+          <button class="view-btn" id="view-table-btn" title="Table view" onclick="setView('table')">☰</button>
+        </div>
+      </div>
+
+      <!-- Grid View (default) -->
+      <div id="grid-view">
+        <div class="table-card" style="margin-bottom:0">
+          <div class="table-card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="table-card-title">Image Gallery</span>
+              <span class="table-card-count" id="visible-count-grid">0 images</span>
+            </div>
+          </div>
+          <div style="padding:16px">
+            <div class="gallery-masonry" id="gallery-masonry">
+              <!-- skeleton placeholders -->
+              <div class="gallery-masonry-item" style="height:160px"><div class="skeleton" style="height:100%;width:100%"></div></div>
+              <div class="gallery-masonry-item" style="height:220px"><div class="skeleton" style="height:100%;width:100%"></div></div>
+              <div class="gallery-masonry-item" style="height:140px"><div class="skeleton" style="height:100%;width:100%"></div></div>
+              <div class="gallery-masonry-item" style="height:200px"><div class="skeleton" style="height:100%;width:100%"></div></div>
+            </div>
+            <div id="grid-empty" class="empty-state" style="display:none">
+              <div class="empty-state-icon">🖼️</div>
+              <div class="empty-state-title">No images yet</div>
+              <div class="empty-state-text">Upload your first image using the button above.</div>
+            </div>
+          </div>
+          <div class="pagination" id="pagination-grid" style="display:none">
+            <div class="page-info" id="page-info-grid"></div>
+            <div id="page-buttons-grid" style="display:flex;gap:4px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table View (hidden by default) -->
+      <div id="table-view" style="display:none">
+        <div class="table-card">
+          <div class="table-card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="table-card-title">All Images</span>
+              <span class="table-card-count" id="visible-count-table">0 images</span>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table" id="gallery-table">
+              <thead>
+                <tr>
+                  <th style="width:72px">Preview</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Tags</th>
+                  <th>Uploaded</th>
+                  <th style="width:110px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="gallery-tbody">
+                <tr class="loading-row">
+                  <td colspan="6"><div class="loader"></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="pagination-table" style="display:none">
+            <div class="page-info" id="page-info-table"></div>
+            <div id="page-buttons-table" style="display:flex;gap:4px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-layout -->
+
+
+<!-- ══════════════════════════════════════════════════
+     UPLOAD MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="upload-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title" id="upload-modal-title">Upload Images</div>
+      <button class="modal-close" onclick="closeModal('upload-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id" />
+
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Title</label>
+          <input type="text" id="f-title" class="form-control" placeholder="Image title (optional)" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input type="text" id="f-category" class="form-control" placeholder="e.g. Events, Nature" list="category-datalist" />
+          <datalist id="category-datalist"></datalist>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tags <span style="font-weight:400;color:var(--text-muted)">(comma-separated)</span></label>
+          <input type="text" id="f-tags" class="form-control" placeholder="e.g. outdoor, 2024" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date <span style="font-weight:400;color:var(--text-muted)">(optional — defaults to today)</span></label>
+          <input type="date" id="f-event-date" class="form-control" />
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Description</label>
+          <textarea id="f-description" class="form-control" rows="2" placeholder="Optional description…"></textarea>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Image(s) <span style="color:var(--red)">*</span></label>
+          <div class="upload-zone" id="image-dropzone">
+            <input type="file" id="f-images" accept="image/*" multiple />
+            <div class="upload-zone-icon">🖼️</div>
+            <div class="upload-zone-text"><strong>Click to upload</strong> or drag &amp; drop</div>
+            <div class="upload-zone-text" style="font-size:0.72rem;margin-top:4px">JPG, PNG, WebP, GIF, SVG — max 10 MB each · multiple files allowed</div>
+          </div>
+
+          <!-- Preview strip -->
+          <div id="preview-strip" style="display:none;margin-top:12px;display:none">
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px" id="preview-label"></div>
+            <div id="preview-grid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+          </div>
+
+          <!-- Existing image when editing -->
+          <div id="existing-image-wrap" style="display:none;margin-top:8px;">
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Current image:</div>
+            <img id="existing-image" style="max-height:100px;border-radius:8px;border:1px solid var(--border)" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('upload-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveGallery()">⬆ Upload</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     LIGHTBOX
+══════════════════════════════════════════════════════ -->
+<div class="lightbox-overlay" id="lightbox">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <button class="lightbox-nav lightbox-prev" id="lb-prev" onclick="lightboxNav(-1)">‹</button>
+    <img id="lb-img" src="" alt="" />
+    <button class="lightbox-nav lightbox-next" id="lb-next" onclick="lightboxNav(1)">›</button>
+    <div class="lightbox-caption" id="lb-caption"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════ -->
+<script src="../js/api.js"></script>
+<script>
+  // ── SIDEBAR LOGO PATCH ────────────────────────────────
+  // Replaces the sidebar brand area with the official Apex logo.
+  // Resilient selector cascade handles any class name the template uses.
+  function patchSidebarLogo() {
+    const LOGO_HTML = `
+      <img
+        src="../assets/logo.png"
+        alt="Apex Startup Group"
+        style="
+          width: 52px;
+          height: 52px;
+          object-fit: contain;
+          border-radius: 10px;
+          display: block;
+          flex-shrink: 0;
+        "
+      />
+      <div>
+        <div style="
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: 0.01em;
+          line-height: 1.1;
+        ">Apex</div>
+        <div style="
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 2px;
+        ">Admin Panel</div>
+      </div>
+`;
+    const selectors = [
+      '.sidebar-brand', '.sidebar-logo', '.sidebar-header',
+      '.nav-brand', '.logo-wrap', '.sidebar > .brand',
+      '.sidebar > div:first-child', '.sidebar > nav > div:first-child',
+      'aside > div:first-child',
+    ];
+    let brandEl = null;
+    for (const sel of selectors) {
+      brandEl = document.querySelector(sel);
+      if (brandEl) break;
+    }
+    if (!brandEl) {
+      const root = document.getElementById('sidebar-root');
+      if (root) brandEl = root.querySelector('div');
+    }
+    if (brandEl) {
+      brandEl.style.cssText += 'display:flex!important;align-items:center!important;gap:12px!important;padding:20px 16px 16px!important;';
+      brandEl.innerHTML = LOGO_HTML;
+    }
+  }
+
+'use strict';
+
+// ── AUTH GUARD ────────────────────────────────────────
+if (!Auth.requireAuth()) { throw new Error('Unauthenticated'); }
+
+// ── INIT LAYOUT ───────────────────────────────────────
+document.getElementById('sidebar-root').innerHTML = renderSidebarLayout('gallery');
+  Sidebar.init();
+  patchSidebarLogo();
+Confirm.init();
+Toast.init();
+
+// ── STATE ─────────────────────────────────────────────
+let allImages   = [];
+let filtered    = [];
+let editingId   = null;
+let currentPage = 1;
+let currentView = 'grid';
+const PER_PAGE  = 20;
+
+// Lightbox state
+let lbIndex = 0;
+let lbItems = [];
+
+// ── ESC HELPER ────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── IMAGE URL HELPER ──────────────────────────────────
+function imgUrl(path) {
+  if (!path) return '';
+  // already full URL
+  if (path.startsWith('http')) return path;
+  // remove leading slash
+  path = path.replace(/^\/+/, '');
+  return `http://localhost:5000/${path}`;
+}
+
+// ── LOAD GALLERY ─────────────────────────────────────
+async function loadGallery() {
+  showSkeletons();
+  try {
+    const res = await api.get('/gallery');
+    if (!res?.ok) throw new Error(res?.data?.message || 'Failed to load gallery');
+    allImages = res.data?.images || res.data?.data || res.data || [];
+    updateStats();
+    populateCategoryFilter();
+    applyFilters();
+  } catch (err) {
+    Toast.error(err.message || 'Could not load gallery images.');
+    renderGridEmpty();
+    renderTableEmpty();
+  }
+}
+
+// ── STATS ─────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-total').textContent = allImages.length;
+
+  const cats = new Set(allImages.map(i => i.category).filter(Boolean));
+  document.getElementById('stat-categories').textContent = cats.size || '—';
+
+  const today = new Date().toDateString();
+  const todayCount = allImages.filter(i => {
+    const d = i.createdAt || i.uploadedAt || i.date;
+    return d && new Date(d).toDateString() === today;
+  }).length;
+  document.getElementById('stat-today').textContent = todayCount;
+
+  const totalBytes = allImages.reduce((acc, i) => acc + (i.size || 0), 0);
+  document.getElementById('stat-size').textContent = totalBytes ? fmtSize(totalBytes) : '—';
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// ── CATEGORY FILTER ───────────────────────────────────
+function populateCategoryFilter() {
+  const sel = document.getElementById('filter-category');
+  const cats = [...new Set(allImages.map(i => i.category).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Categories</option>';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if (c === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+
+  // Datalist for upload form
+  const dl = document.getElementById('category-datalist');
+  dl.innerHTML = '';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    dl.appendChild(o);
+  });
+}
+
+// ── FILTERS ───────────────────────────────────────────
+function applyFilters() {
+  const q   = document.getElementById('search-input').value.toLowerCase();
+  const cat = document.getElementById('filter-category').value;
+
+  filtered = allImages.filter(img => {
+    const haystack = [img.title, img.category, img.description,
+                      ...(Array.isArray(img.tags) ? img.tags : [])].join(' ').toLowerCase();
+    const matchQ   = !q   || haystack.includes(q);
+    const matchCat = !cat || img.category === cat;
+    return matchQ && matchCat;
+  });
+
+  currentPage = 1;
+  renderCurrentView();
+}
+
+// ── VIEW TOGGLE ───────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.getElementById('grid-view').style.display  = v === 'grid'  ? '' : 'none';
+  document.getElementById('table-view').style.display = v === 'table' ? '' : 'none';
+  document.getElementById('view-grid-btn').classList.toggle('active',  v === 'grid');
+  document.getElementById('view-table-btn').classList.toggle('active', v === 'table');
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  if (currentView === 'grid') renderGrid();
+  else renderTable();
+}
+
+// ── PAGINATION HELPERS ────────────────────────────────
+function paginate(arr) {
+  const start = (currentPage - 1) * PER_PAGE;
+  return arr.slice(start, start + PER_PAGE);
+}
+
+function renderPagination(containerId, infoId, total) {
+  const totalPages = Math.ceil(total / PER_PAGE);
+  const container  = document.getElementById(containerId);
+  const info       = document.getElementById(infoId);
+
+  if (totalPages <= 1) { container.style.display = 'none'; return; }
+  container.style.display = '';
+
+  const start = (currentPage - 1) * PER_PAGE + 1;
+  const end   = Math.min(currentPage * PER_PAGE, total);
+  info.textContent = `Showing ${start}–${end} of ${total}`;
+
+  const btnWrap = container.querySelector('[id^="page-buttons"]');
+  btnWrap.innerHTML = '';
+
+  const mkBtn = (label, page, disabled = false) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (page === currentPage ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    b.addEventListener('click', () => { currentPage = page; renderCurrentView(); });
+    btnWrap.appendChild(b);
+  };
+
+  mkBtn('‹', currentPage - 1, currentPage === 1);
+  for (let p = 1; p <= totalPages; p++) {
+    if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
+      if (p === 2 || p === totalPages - 1) { const s = document.createElement('span'); s.textContent = '…'; s.style.padding = '0 4px'; s.style.color = 'var(--text-muted)'; btnWrap.appendChild(s); }
+      continue;
+    }
+    mkBtn(p, p);
+  }
+  mkBtn('›', currentPage + 1, currentPage === totalPages);
+}
+
+// ── GRID RENDER ───────────────────────────────────────
+function renderGrid() {
+  const masonry  = document.getElementById('gallery-masonry');
+  const empty    = document.getElementById('grid-empty');
+  const countEl  = document.getElementById('visible-count-grid');
+
+  countEl.textContent = `${filtered.length} image${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) {
+    masonry.innerHTML = '';
+    empty.style.display = '';
+    document.getElementById('pagination-grid').style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  const page = paginate(filtered);
+  lbItems = filtered.map(i => ({ src: imgUrl(i.mediaUrl), caption: i.title || '' }));
+
+  masonry.innerHTML = page.map((img, idx) => {
+    const src   = imgUrl(img.mediaUrl);
+    const title = esc(img.title || img.filename || 'Untitled');
+    const id    = img._id || img.id;
+    const realIdx = (currentPage - 1) * PER_PAGE + idx;
+    return `
+      <div class="gallery-masonry-item" onclick="openLightbox(${realIdx})">
+        <img src="${esc(src)}" alt="${title}" loading="lazy" />
+        <div class="gallery-item-overlay">
+          <div class="gallery-item-title">${title}</div>
+          <div class="gallery-item-actions">
+            <button class="gallery-item-btn view" onclick="event.stopPropagation();editImage('${esc(id)}')">✏ Edit</button>
+            <button class="gallery-item-btn del"  onclick="event.stopPropagation();deleteImage('${esc(id)}','${title}')">🗑 Delete</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  renderPagination('pagination-grid', 'page-info-grid', filtered.length);
+}
+
+function showSkeletons() {
+  const masonry = document.getElementById('gallery-masonry');
+  const heights = [160, 220, 140, 200, 180, 160, 210, 150];
+  masonry.innerHTML = heights.map(h =>
+    `<div class="gallery-masonry-item" style="height:${h}px"><div class="skeleton" style="height:100%;width:100%"></div></div>`
+  ).join('');
+  document.getElementById('grid-empty').style.display = 'none';
+}
+
+function renderGridEmpty() {
+  document.getElementById('gallery-masonry').innerHTML = '';
+  document.getElementById('grid-empty').style.display = '';
+}
+
+// ── TABLE RENDER ──────────────────────────────────────
+function renderTable() {
+  const tbody   = document.getElementById('gallery-tbody');
+  const countEl = document.getElementById('visible-count-table');
+
+  countEl.textContent = `${filtered.length} image${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) {
+    renderTableEmpty();
+    document.getElementById('pagination-table').style.display = 'none';
+    return;
+  }
+
+  const page = paginate(filtered);
+  tbody.innerHTML = page.map(img => {
+    const src    = imgUrl(img.mediaUrl);
+    const title  = esc(img.title || img.filename || '—');
+    const id     = img._id || img.id;
+    const tags   = Array.isArray(img.tags)
+      ? img.tags.map(t => `<span class="badge badge-gray" style="font-size:.7rem">${esc(t)}</span>`).join(' ')
+      : (img.tags ? `<span class="badge badge-gray" style="font-size:.7rem">${esc(img.tags)}</span>` : '—');
+
+    return `
+    <tr>
+      <td>
+        ${src
+          ? `<img src="${esc(src)}" class="gallery-thumb" alt="${title}" onclick="openLightboxById('${esc(id)}')" title="Click to preview" />`
+          : `<div class="gallery-thumb-placeholder">🖼️</div>`}
+      </td>
+      <td>
+        <span style="font-weight:600;font-size:.875rem;color:var(--text)">${title}</span>
+        ${img.description ? `<span style="display:block;font-size:.72rem;color:var(--text-muted);margin-top:2px">${esc(truncate(img.description, 60))}</span>` : ''}
+      </td>
+      <td>${img.category ? `<span class="badge badge-orange">${esc(img.category)}</span>` : '—'}</td>
+      <td>${tags}</td>
+      <td style="font-size:.8rem;color:var(--text-muted)">${fmtDate(img.eventDate || img.createdAt || img.uploadedAt || img.date)}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-icon" title="Edit" onclick="editImage('${esc(id)}')">✏</button>
+          <button class="btn btn-icon btn-danger" title="Delete" onclick="deleteImage('${esc(id)}','${title}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination('pagination-table', 'page-info-table', filtered.length);
+}
+
+function renderTableEmpty() {
+  document.getElementById('gallery-tbody').innerHTML = `
+    <tr class="empty-row">
+      <td colspan="6">
+        <div class="empty-state">
+          <div class="empty-state-icon">🖼️</div>
+          <div class="empty-state-title">No images found</div>
+          <div class="empty-state-text">Try adjusting your filters or upload new images.</div>
+        </div>
+      </td>
+    </tr>`;
+}
+
+// ── LIGHTBOX ──────────────────────────────────────────
+function openLightbox(idx) {
+  lbIndex = idx;
+  showLightboxFrame();
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function openLightboxById(id) {
+  const idx = filtered.findIndex(i => (i._id || i.id) === id);
+  if (idx < 0) return;
+  lbItems = filtered.map(i => ({ src: imgUrl(i.mediaUrl), caption: i.title || '' }));
+  openLightbox(idx);
+}
+
+function showLightboxFrame() {
+  const item = lbItems[lbIndex];
+  if (!item) return;
+  document.getElementById('lb-img').src = item.src || '';
+  document.getElementById('lb-caption').textContent = item.caption || '';
+  document.getElementById('lb-prev').style.visibility = lbIndex > 0 ? '' : 'hidden';
+  document.getElementById('lb-next').style.visibility = lbIndex < lbItems.length - 1 ? '' : 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+function lightboxNav(dir) {
+  const next = lbIndex + dir;
+  if (next < 0 || next >= lbItems.length) return;
+  lbIndex = next;
+  showLightboxFrame();
+}
+
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+});
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft')  lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+});
+
+// ── UPLOAD MODAL ─────────────────────────────────────
+function openUploadModal() {
+  editingId = null;
+  resetForm();
+  document.getElementById('upload-modal-title').textContent = 'Upload Images';
+  document.getElementById('save-btn').textContent = '⬆ Upload';
+  openModal('upload-modal');
+}
+
+// ── EDIT IMAGE ────────────────────────────────────────
+function editImage(id) {
+  const img = allImages.find(i => (i._id || i.id) === id);
+  if (!img) return;
+
+  editingId = img._id || img.id;
+  resetForm();
+
+  document.getElementById('upload-modal-title').textContent = 'Edit Image';
+  document.getElementById('save-btn').textContent = '✓ Save Changes';
+
+  document.getElementById('f-title').value       = img.title       || '';
+  document.getElementById('f-category').value    = img.category    || '';
+  document.getElementById('f-description').value = img.description || '';
+  document.getElementById('f-tags').value = Array.isArray(img.tags) ? img.tags.join(', ') : (img.tags || '');
+
+  // Preload custom date — prefer eventDate, fall back to createdAt
+  const rawDate = img.eventDate || img.createdAt || img.uploadedAt || '';
+  if (rawDate) {
+    try {
+      // Format as YYYY-MM-DD for the date input
+      const d = new Date(rawDate);
+      if (!isNaN(d)) {
+        document.getElementById('f-event-date').value =
+          d.toISOString().slice(0, 10);
+      }
+    } catch (_) {}
+  }
+
+  const src = imgUrl(img.mediaUrl);
+  if (src) {
+    const el = document.getElementById('existing-image');
+    el.src = src;
+    document.getElementById('existing-image-wrap').style.display = '';
+  }
+
+  openModal('upload-modal');
+}
+
+// ── SAVE / UPLOAD ─────────────────────────────────────
+async function saveGallery() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  const isEdit = !!editingId;
+  btn.textContent = isEdit ? '⏳ Saving…' : '⏳ Uploading…';
+
+  try {
+    if (isEdit) {
+      // Update metadata only (or with new image)
+      const imageFile = document.getElementById('f-images').files[0];
+      let res;
+
+      if (imageFile) {
+        const fd = new FormData();
+        fd.append('title',       document.getElementById('f-title').value.trim());
+        fd.append('category',    document.getElementById('f-category').value.trim());
+        fd.append('description', document.getElementById('f-description').value.trim());
+        fd.append('tags',        document.getElementById('f-tags').value.trim());
+        const evDate = document.getElementById('f-event-date').value;
+        if (evDate) fd.append('eventDate', evDate);
+        fd.append('image',       imageFile);
+        res = await api.putForm(`/gallery/${editingId}`, fd);
+      } else {
+        const payload = {
+          title:       document.getElementById('f-title').value.trim(),
+          category:    document.getElementById('f-category').value.trim(),
+          description: document.getElementById('f-description').value.trim(),
+          tags:        document.getElementById('f-tags').value.trim(),
+        };
+        const evDate = document.getElementById('f-event-date').value;
+        if (evDate) payload.eventDate = evDate;
+        res = await api.put(`/gallery/${editingId}`, payload);
+      }
+
+      if (!res?.ok) throw new Error(res?.data?.message || 'Update failed');
+      Toast.success('Image updated successfully!');
+
+    } else {
+      // Upload one or more new images
+      const files = document.getElementById('f-images').files;
+      if (!files.length) { Toast.error('Please select at least one image.'); return; }
+
+      const uploads = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('title',       document.getElementById('f-title').value.trim() || file.name.replace(/\.[^.]+$/, ''));
+        fd.append('category',    document.getElementById('f-category').value.trim());
+        fd.append('description', document.getElementById('f-description').value.trim());
+        fd.append('tags',        document.getElementById('f-tags').value.trim());
+        const evDate = document.getElementById('f-event-date').value;
+        // Use selected date or fall back to today
+        fd.append('eventDate', evDate || new Date().toISOString().slice(0, 10));
+        fd.append('image',       file);
+        uploads.push(api.postForm('/gallery', fd));
+      }
+
+      const results = await Promise.all(uploads);
+      const failed  = results.filter(r => !r?.ok);
+      if (failed.length === results.length) throw new Error('All uploads failed');
+      if (failed.length) Toast.info(`${results.length - failed.length} uploaded, ${failed.length} failed.`);
+      else Toast.success(`${results.length} image${results.length > 1 ? 's' : ''} uploaded!`);
+    }
+
+    closeModal('upload-modal');
+    await loadGallery();
+  } catch (err) {
+    Toast.error(err.message || 'An error occurred.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isEdit ? '✓ Save Changes' : '⬆ Upload';
+  }
+}
+
+// ── DELETE IMAGE ─────────────────────────────────────
+async function deleteImage(id, title) {
+  const ok = await Confirm.show(
+    'Delete Image',
+    `Are you sure you want to delete "${title}"? This cannot be undone.`
+  );
+  if (!ok) return;
+
+  try {
+    const res = await api.delete(`/gallery/${id}`);
+    if (!res?.ok) throw new Error(res?.data?.message || 'Delete failed');
+    Toast.success('Image deleted.');
+    await loadGallery();
+  } catch (err) {
+    Toast.error(err.message || 'Could not delete image.');
+  }
+}
+
+// ── RESET FORM ────────────────────────────────────────
+function resetForm() {
+  ['f-title','f-category','f-tags','f-description','f-event-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-images').value = '';
+  document.getElementById('preview-strip').style.display = 'none';
+  document.getElementById('preview-grid').innerHTML = '';
+  document.getElementById('existing-image-wrap').style.display = 'none';
+}
+
+// ── MULTI-IMAGE PREVIEW ───────────────────────────────
+document.getElementById('f-images').addEventListener('change', function () {
+  const strip  = document.getElementById('preview-strip');
+  const grid   = document.getElementById('preview-grid');
+  const label  = document.getElementById('preview-label');
+  const files  = this.files;
+
+  if (!files.length) { strip.style.display = 'none'; return; }
+  strip.style.display = '';
+  label.textContent = `${files.length} file${files.length > 1 ? 's' : ''} selected:`;
+  grid.innerHTML = '';
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;width:72px;height:56px;border-radius:8px;overflow:hidden;border:1px solid var(--border)';
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      wrap.appendChild(img);
+      grid.appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+// ── DROPZONE DRAG SUPPORT ─────────────────────────────
+setupDropzone('image-dropzone');
+
+// ── SEARCH & FILTER ───────────────────────────────────
+document.getElementById('search-input').addEventListener('input',   applyFilters);
+document.getElementById('filter-category').addEventListener('change', applyFilters);
+
+// ── CLOSE MODAL ON OVERLAY CLICK ─────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── BOOTSTRAP ────────────────────────────────────────
+loadGallery();
+</script>
+</body>
+</html>

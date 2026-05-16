@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — Apex Startup Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:        #F97316;
+      --orange-dark:   #EA6A0A;
+      --orange-pale:   #FFF7ED;
+      --text:          #0F172A;
+      --text-2:        #334155;
+      --text-muted:    #64748B;
+      --border:        #E2E8F0;
+      --bg:            #F8FAFC;
+      --sidebar-bg:    #080C14;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--sidebar-bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Background atmosphere ── */
+    .bg-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .bg-glow-left {
+      position: absolute;
+      width: 600px; height: 600px;
+      left: -120px; top: 50%;
+      transform: translateY(-50%);
+      background: radial-gradient(circle, rgba(249,115,22,.09) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .bg-glow-right {
+      position: absolute;
+      width: 400px; height: 400px;
+      right: -60px; top: 20%;
+      background: radial-gradient(circle, rgba(249,115,22,.05) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    /* Subtle vignette to fade edges */
+    .bg-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(8,12,20,.8) 100%);
+    }
+
+    /* ── Login wrapper ── */
+    .login-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeUp .5s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Branding header ── */
+    .brand-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    /* Logo mark: uploaded brand image */
+    .brand-icon {
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .login-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand-wordmark {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .brand-wordmark em {
+      font-style: normal;
+      background: linear-gradient(90deg, #F97316 0%, #FB923C 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+      margin-top: 6px;
+    }
+    .brand-tagline::before,
+    .brand-tagline::after {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: rgba(255,255,255,.15);
+    }
+
+    /* ── Login card ── */
+    .login-card {
+      width: 100%;
+      background: rgba(255,255,255,.98);
+      border-radius: 20px;
+      padding: 36px 36px 32px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.06),
+        0 2px 4px rgba(0,0,0,.08),
+        0 12px 32px rgba(0,0,0,.28),
+        0 40px 80px rgba(0,0,0,.2);
+      backdrop-filter: blur(12px);
+    }
+
+    .card-heading {
+      margin-bottom: 28px;
+    }
+    .card-heading h1 {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .card-heading p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94A3B8;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon svg { width: 15px; height: 15px; }
+
+    input[type=email],
+    input[type=password] {
+      width: 100%;
+      padding: 11px 12px 11px 40px;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: #FAFBFD;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+      background: #fff;
+    }
+    input::placeholder { color: #B0BBCA; }
+
+    .pw-toggle {
+      position: absolute;
+      right: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94A3B8;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      border-radius: 5px;
+      transition: color .15s;
+    }
+    .pw-toggle:hover { color: var(--text-2); }
+    .pw-toggle svg { width: 15px; height: 15px; }
+
+    /* ── Remember row ── */
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      font-size: 0.84rem;
+      color: var(--text-2);
+    }
+    .remember-row input[type=checkbox] {
+      accent-color: var(--orange);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+    .remember-row label { margin: 0; cursor: pointer; font-weight: 500; font-size: 0.84rem; }
+
+    /* ── Error ── */
+    .error-msg {
+      display: none;
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #DC2626;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-size: 0.83rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .error-msg { display: none; }
+    .error-msg.show { display: flex; }
+    .error-msg svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Sign-in button ── */
+    .btn-login {
+      width: 100%;
+      padding: 12.5px;
+      background: linear-gradient(135deg, #F97316 0%, #EA6A0A 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s, box-shadow .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(249,115,22,.35);
+      letter-spacing: 0.01em;
+    }
+    .btn-login:hover {
+      opacity: 0.92;
+      box-shadow: 0 6px 20px rgba(249,115,22,.45);
+    }
+    .btn-login:active { transform: scale(0.985); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* spinner */
+    .spinner {
+      width: 17px; height: 17px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      display: none;
+    }
+    .btn-login.loading .spinner { display: block; }
+    .btn-login.loading .btn-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    .login-card-footer {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid #F1F5F9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.73rem;
+      color: #94A3B8;
+      font-weight: 500;
+    }
+    .security-badge svg { width: 12px; height: 12px; color: #10B981; }
+
+    /* ── Below-card note ── */
+    .login-below {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.73rem;
+      color: rgba(255,255,255,.2);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .login-card { padding: 28px 22px 24px; border-radius: 16px; }
+      .brand-wordmark { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background layers -->
+  <div class="bg-layer">
+    <div class="bg-grid"></div>
+    <div class="bg-glow-left"></div>
+    <div class="bg-glow-right"></div>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <div class="login-wrapper">
+
+    <!-- ── Brand Header ── -->
+    <div class="brand-header">
+      <div class="brand-icon">
+        <img src="./assets/short logo.png" alt="Apex Startup Group Logo" class="login-logo">
+      </div>
+
+      <div class="brand-wordmark">Apex <em>Startup</em> Group</div>
+      <div class="brand-tagline">Admin Control Panel</div>
+    </div>
+
+    <!-- ── Login Card ── -->
+    <div class="login-card">
+
+      <div class="card-heading">
+        <h1>Welcome back</h1>
+        <p>Sign in to manage your platform</p>
+      </div>
+
+      <!-- Error message -->
+      <div class="error-msg" id="error-msg">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 4a.75.75 0 011.5 0v3.5a.75.75 0 01-1.5 0V5zm.75 7a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+        <span id="error-text"></span>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="1" y="3" width="14" height="10" rx="2"/>
+              <path d="M1 5l7 5 7-5"/>
+            </svg>
+          </span>
+          <input type="email" id="email" placeholder="admin@apexstartup.com" autocomplete="email" />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="7" width="10" height="8" rx="1.5"/>
+              <path d="M5 7V5a3 3 0 116 0v2"/>
+            </svg>
+          </span>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+          <button class="pw-toggle" id="pw-toggle" type="button" aria-label="Toggle password visibility">
+            <!-- Eye icon -->
+            <svg id="eye-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+              <circle cx="8" cy="8" r="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Remember -->
+      <div class="remember-row">
+        <input type="checkbox" id="remember" />
+        <label for="remember">Keep me signed in</label>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-login" id="login-btn" type="button">
+        <span class="btn-text">Sign in to Dashboard</span>
+        <span class="spinner"></span>
+      </button>
+
+      <!-- Card footer -->
+      <div class="login-card-footer">
+        <span class="security-badge">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 1L2 3v3c0 2.5 1.8 4.5 4 5 2.2-.5 4-2.5 4-5V3L6 1z"/>
+          </svg>
+          SSL encrypted connection
+        </span>
+        <span style="color:#CBD5E1;font-size:.73rem;">·</span>
+        <span class="security-badge">Apex Startup Group © 2025</span>
+      </div>
+    </div>
+
+    <div class="login-below">Protected area — authorised personnel only</div>
+  </div>
+
+  <script>
+    // If already logged in, redirect to dashboard
+    if (sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token')) {
+      window.location.href = 'pages/dashboard.html';
+    }
+
+    const API_BASE = 'http://localhost:5000/api';
+
+    const emailEl = document.getElementById('email');
+    const pwEl    = document.getElementById('password');
+    const btn     = document.getElementById('login-btn');
+    const errEl   = document.getElementById('error-msg');
+    const errTxt  = document.getElementById('error-text');
+
+    // Toggle password visibility
+    document.getElementById('pw-toggle').addEventListener('click', () => {
+      pwEl.type = pwEl.type === 'password' ? 'text' : 'password';
+    });
+
+    // Enter key support
+    [emailEl, pwEl].forEach(el => {
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    });
+
+    btn.addEventListener('click', doLogin);
+
+    async function doLogin() {
+      const email    = emailEl.value.trim();
+      const password = pwEl.value;
+      const remember = document.getElementById('remember').checked;
+
+      errEl.classList.remove('show');
+
+      if (!email || !password) {
+        showError('Please enter your email and password.');
+        return;
+      }
+
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        const res  = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          showError(data.message || 'Login failed. Check your credentials.');
+          return;
+        }
+
+        // Store token
+        if (remember) localStorage.setItem('admin_token', data.token);
+        else          sessionStorage.setItem('admin_token', data.token);
+        localStorage.setItem('admin_user', JSON.stringify(data.admin));
+
+        window.location.href = 'pages/dashboard.html';
+      } catch (err) {
+        showError('Cannot connect to server. Is the backend running?');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function showError(msg) {
+      errTxt.textContent = msg;
+      errEl.classList.add('show');
+    }
+  </script>
+</body>
+</html>

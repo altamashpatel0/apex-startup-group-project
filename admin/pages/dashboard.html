@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Apex Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+  <style>
+    /* ── DASHBOARD-SPECIFIC ─────────────────────────── */
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      right: -10px; bottom: -10px;
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      opacity: .06;
+    }
+    .stat-card.orange-accent::after { background: var(--orange); }
+    .stat-card.green-accent::after  { background: var(--green); }
+    .stat-card.blue-accent::after   { background: var(--blue); }
+    .stat-card.yellow-accent::after { background: var(--yellow); }
+
+    .stat-trend {
+      font-size: 0.72rem;
+      color: var(--green);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Quick links */
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .quick-link {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-decoration: none;
+      color: var(--text-2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      transition: border-color .15s, box-shadow .15s, color .15s;
+    }
+    .quick-link:hover {
+      border-color: var(--orange);
+      box-shadow: var(--shadow-sm);
+      color: var(--orange-dark);
+    }
+    .quick-link-icon {
+      font-size: 1.5rem;
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      background: var(--bg);
+    }
+
+    /* Two-column layout */
+    .dashboard-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .dashboard-cols { grid-template-columns: 1fr; }
+    }
+
+    /* Section cards */
+    .section-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .section-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .section-card-link {
+      font-size: 0.78rem;
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .section-card-link:hover { text-decoration: underline; }
+
+    /* Activity feed */
+    .activity-list { padding: 4px 0; }
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-light);
+      transition: background .1s;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--bg); }
+    .activity-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .activity-dot.orange { background: var(--orange); }
+    .activity-dot.green  { background: var(--green); }
+    .activity-dot.blue   { background: var(--blue); }
+    .activity-dot.yellow { background: var(--yellow); }
+    .activity-text {
+      flex: 1;
+      font-size: 0.82rem;
+      color: var(--text-2);
+      line-height: 1.4;
+    }
+    .activity-text strong { color: var(--text); }
+    .activity-time {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    /* Recent blogs mini-list */
+    .mini-blog-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-light);
+      transition: background .1s;
+    }
+    .mini-blog-item:last-child { border-bottom: none; }
+    .mini-blog-item:hover { background: var(--bg); }
+    .mini-blog-body { flex: 1; min-width: 0; }
+    .mini-blog-title {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mini-blog-meta {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Skeleton loader */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--border-light) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+    .skeleton-val {
+      height: 28px; width: 60px;
+      display: inline-block;
+    }
+
+    /* Greeting banner */
+    .greeting-banner {
+      background: linear-gradient(135deg, var(--sidebar-bg) 0%, #1e293b 100%);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .greeting-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 80% 50%, rgba(249,115,22,.12) 0%, transparent 60%);
+    }
+    .greeting-text { position: relative; }
+    .greeting-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .greeting-sub { font-size: 0.82rem; color: rgba(255,255,255,.5); }
+    .greeting-emoji { font-size: 2.8rem; position: relative; }
+
+    /* Events mini-list */
+    .event-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .event-item:last-child { border-bottom: none; }
+    .event-date-box {
+      width: 40px; height: 44px;
+      border-radius: 8px;
+      background: var(--orange-pale);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .event-date-day {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--orange);
+      line-height: 1;
+    }
+    .event-date-mon {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--orange-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .event-info { flex: 1; min-width: 0; }
+    .event-name {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+
+    /* Empty mini state */
+    .mini-empty {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+    .mini-empty-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- Sidebar injected here -->
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger">☰</button>
+        <div>
+          <div class="topbar-title">Dashboard</div>
+          <div class="topbar-breadcrumb">Overview of your platform</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="topbar-date" style="font-size:0.78rem;color:var(--text-muted);"></span>
+      </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Greeting Banner -->
+      <div class="greeting-banner">
+        <div class="greeting-text">
+          <div class="greeting-title" id="greeting-title">Welcome back, Admin 👋</div>
+          <div class="greeting-sub">Here's what's happening on your platform today.</div>
+        </div>
+        <div class="greeting-emoji">🚀</div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="stats-grid">
+        <!-- Blog -->
+        <div class="stat-card orange-accent">
+          <div class="stat-icon orange">📝</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-blogs"><span class="skeleton skeleton-val"></span></div>
+            <div class="stat-label">Total Blogs</div>
+            <div class="stat-trend" id="trend-blogs" style="color:var(--text-muted)">Loading…</div>
+          </div>
+        </div>
+        <!-- Gallery -->
+        <div class="stat-card blue-accent">
+          <div class="stat-icon blue">🖼️</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-gallery"><span class="skeleton skeleton-val"></span></div>
+            <div class="stat-label">Gallery Images</div>
+            <div class="stat-trend" id="trend-gallery" style="color:var(--text-muted)">Loading…</div>
+          </div>
+        </div>
+        <!-- Events -->
+        <div class="stat-card yellow-accent">
+          <div class="stat-icon yellow">📅</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-events"><span class="skeleton skeleton-val"></span></div>
+            <div class="stat-label">Total Events</div>
+            <div class="stat-trend" id="trend-events" style="color:var(--text-muted)">Loading…</div>
+          </div>
+        </div>
+        <!-- Registrations -->
+        <div class="stat-card green-accent">
+          <div class="stat-icon green">📋</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-registrations"><span class="skeleton skeleton-val"></span></div>
+            <div class="stat-label">Registrations</div>
+            <div class="stat-trend" id="trend-registrations" style="color:var(--text-muted)">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="quick-links">
+        <a class="quick-link" href="blogs.html">
+          <div class="quick-link-icon">📝</div>
+          Manage Blogs
+        </a>
+        <a class="quick-link" href="gallery.html">
+          <div class="quick-link-icon">🖼️</div>
+          Gallery
+        </a>
+        <a class="quick-link" href="events.html">
+          <div class="quick-link-icon">📅</div>
+          Events
+        </a>
+        <a class="quick-link" href="registrations.html">
+          <div class="quick-link-icon">📋</div>
+          Registrations
+        </a>
+      </div>
+
+      <!-- Two-column lower section -->
+      <div class="dashboard-cols">
+
+        <!-- Recent Blogs -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">📝 Recent Blogs</div>
+            <a class="section-card-link" href="blogs.html">View all →</a>
+          </div>
+          <div id="recent-blogs-list">
+            <div style="padding:24px;text-align:center;"><div class="loader"></div></div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">📅 Upcoming Events</div>
+            <a class="section-card-link" href="events.html">View all →</a>
+          </div>
+          <div id="upcoming-events-list">
+            <div style="padding:24px;text-align:center;"><div class="loader"></div></div>
+          </div>
+        </div>
+
+        <!-- Recent Registrations -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">📋 Recent Registrations</div>
+            <a class="section-card-link" href="registrations.html">View all →</a>
+          </div>
+          <div id="recent-registrations-list">
+            <div style="padding:24px;text-align:center;"><div class="loader"></div></div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">⚡ Activity Feed</div>
+          </div>
+          <div class="activity-list" id="activity-list">
+            <div style="padding:24px;text-align:center;"><div class="loader"></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-layout -->
+
+<script src="../js/api.js"></script>
+<script>
+  // ── SIDEBAR LOGO PATCH ────────────────────────────────
+  // Replaces whatever logo/brand element the sidebar template renders
+  // with the official Apex Startup Group logo. Works by finding the
+  // brand container via common class names used by renderSidebarLayout.
+  function patchSidebarLogo() {
+    const LOGO_HTML = `
+      <img
+        src="../assets/logo.png"
+        alt="Apex Startup Group"
+        style="
+          width: 52px;
+          height: 52px;
+          object-fit: contain;
+          border-radius: 10px;
+          display: block;
+          flex-shrink: 0;
+        "
+      />
+      <div>
+        <div style="
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: 0.01em;
+          line-height: 1.1;
+        ">Apex</div>
+        <div style="
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 2px;
+        ">Admin Panel</div>
+      </div>
+    `;
+
+    // Try known class names first (most specific → least specific)
+    const selectors = [
+      '.sidebar-brand',
+      '.sidebar-logo',
+      '.sidebar-header',
+      '.nav-brand',
+      '.logo-wrap',
+      '.sidebar > .brand',
+      '.sidebar > div:first-child',
+      '.sidebar > nav > div:first-child',
+      'aside > div:first-child',
+    ];
+
+    let brandEl = null;
+    for (const sel of selectors) {
+      brandEl = document.querySelector(sel);
+      if (brandEl) break;
+    }
+
+    if (!brandEl) {
+      // Last resort: first div inside #sidebar-root
+      const root = document.getElementById('sidebar-root');
+      if (root) brandEl = root.querySelector('div');
+    }
+
+    if (brandEl) {
+      brandEl.style.cssText += `
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 20px 16px 16px !important;
+      `;
+      brandEl.innerHTML = LOGO_HTML;
+    }
+  }
+  // ── AUTH GUARD ───────────────────────────────────────
+  if (!Auth.requireAuth()) { /* redirected */ }
+
+  // ── INIT SIDEBAR ─────────────────────────────────────
+  document.getElementById('sidebar-root').innerHTML = renderSidebarLayout('dashboard');
+  Sidebar.init();
+  patchSidebarLogo();
+  Confirm.init();
+  Toast.init();
+
+  // ── GREETING ──────────────────────────────────────────
+  (function() {
+    const admin = Auth.getAdmin();
+    const name  = admin.name || 'Admin';
+    const h     = new Date().getHours();
+    const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting-title').textContent = `${greet}, ${name} 👋`;
+
+    const now = new Date();
+    document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-IN', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+  })();
+
+  // ── STATS FETCH ────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const [blogsRes, galleryRes, eventsRes, regsRes] = await Promise.allSettled([
+        api.get('/blogs'),
+        api.get('/gallery'),
+        api.get('/events'),
+        api.get('/registrations'),
+      ]);
+
+      setStatCard('stat-blogs',         'trend-blogs',         blogsRes,   'blog',         'orange');
+      setStatCard('stat-gallery',        'trend-gallery',       galleryRes, 'image',        'blue');
+      setStatCard('stat-events',         'trend-events',        eventsRes,  'event',        'yellow');
+      setStatCard('stat-registrations',  'trend-registrations', regsRes,    'registration', 'green');
+    } catch (e) {
+      Toast.error('Failed to load stats.');
+    }
+  }
+
+  function setStatCard(valId, trendId, result, label, color) {
+    const valEl   = document.getElementById(valId);
+    const trendEl = document.getElementById(trendId);
+
+    if (result.status === 'fulfilled' && result.value?.ok) {
+      const data  = result.value.data;
+      // Support various shapes: { count }, { total }, data array length
+      const count = data.count ?? data.total ?? (Array.isArray(data.data) ? data.data.length : (Array.isArray(data) ? data.length : '—'));
+      valEl.textContent = count;
+      trendEl.textContent = `${count} ${label}${count !== 1 ? 's' : ''} total`;
+      trendEl.style.color = `var(--${color})`;
+    } else {
+      valEl.textContent = '—';
+      trendEl.textContent = 'Could not load';
+      trendEl.style.color = 'var(--red)';
+    }
+  }
+
+  // ── RECENT BLOGS ───────────────────────────────────────
+  async function loadRecentBlogs() {
+    const el = document.getElementById('recent-blogs-list');
+    try {
+      const res = await api.get('/blogs?limit=5');
+      if (!res?.ok) throw new Error();
+
+      const items = Array.isArray(res.data) ? res.data : (res.data.data ?? []);
+      const recent = items.slice(0, 5);
+
+      if (!recent.length) {
+        el.innerHTML = miniEmpty('📝', 'No blogs yet');
+        return;
+      }
+
+      el.innerHTML = recent.map(b => `
+        <div class="mini-blog-item">
+          ${b.image || b.thumbnail
+            ? `<img class="thumb" src="${imgUrl(b.image || b.thumbnail)}" alt="" onerror="this.style.display='none'">`
+            : `<div class="thumb-placeholder">📝</div>`}
+          <div class="mini-blog-body">
+            <div class="mini-blog-title">${esc(b.title || 'Untitled')}</div>
+            <div class="mini-blog-meta">${fmtDate(b.createdAt || b.date)} · ${esc(b.category || b.author || 'Blog')}</div>
+          </div>
+          <span class="badge ${b.published ? 'badge-green' : 'badge-gray'}">${b.published ? 'Live' : 'Draft'}</span>
+        </div>
+      `).join('');
+    } catch {
+      el.innerHTML = miniEmpty('⚠️', 'Failed to load blogs');
+    }
+  }
+
+  // ── UPCOMING EVENTS ────────────────────────────────────
+  async function loadUpcomingEvents() {
+    const el = document.getElementById('upcoming-events-list');
+    try {
+      const res = await api.get('/events');
+      if (!res?.ok) throw new Error();
+
+      const items = Array.isArray(res.data) ? res.data : (res.data.data ?? []);
+      const now   = Date.now();
+      const upcoming = items
+        .filter(e => new Date(e.date || e.startDate) >= now)
+        .sort((a, b) => new Date(a.date || a.startDate) - new Date(b.date || b.startDate))
+        .slice(0, 5);
+
+      if (!upcoming.length) {
+        el.innerHTML = miniEmpty('📅', 'No upcoming events');
+        return;
+      }
+
+      el.innerHTML = upcoming.map(e => {
+        const d = new Date(e.date || e.startDate);
+        return `
+          <div class="event-item">
+            <div class="event-date-box">
+              <div class="event-date-day">${d.getDate()}</div>
+              <div class="event-date-mon">${d.toLocaleString('en', { month: 'short' })}</div>
+            </div>
+            <div class="event-info">
+              <div class="event-name">${esc(e.title || e.name || 'Event')}</div>
+              <div class="event-meta">${esc(e.venue || e.location || 'TBD')}</div>
+            </div>
+            <span class="badge badge-orange">${esc(e.type || 'Event')}</span>
+          </div>
+        `;
+      }).join('');
+    } catch {
+      el.innerHTML = miniEmpty('⚠️', 'Failed to load events');
+    }
+  }
+
+  // ── RECENT REGISTRATIONS ───────────────────────────────
+  async function loadRecentRegistrations() {
+    const el = document.getElementById('recent-registrations-list');
+    try {
+      const res = await api.get('/registrations?limit=5');
+      if (!res?.ok) throw new Error();
+
+      const items = Array.isArray(res.data) ? res.data : (res.data.data ?? []);
+      const recent = items.slice(0, 5);
+
+      if (!recent.length) {
+        el.innerHTML = miniEmpty('📋', 'No registrations yet');
+        return;
+      }
+
+      el.innerHTML = recent.map(r => `
+        <div class="mini-blog-item">
+          <div class="thumb-placeholder" style="font-size:.9rem;font-weight:700;color:var(--orange);background:var(--orange-pale);">
+            ${(r.name || r.fullName || '?')[0].toUpperCase()}
+          </div>
+          <div class="mini-blog-body">
+            <div class="mini-blog-title">${esc(r.name || r.fullName || 'Unknown')}</div>
+            <div class="mini-blog-meta">${esc(r.email || '')} · ${fmtDate(r.createdAt || r.registeredAt)}</div>
+          </div>
+          <span class="badge badge-blue">${esc(r.eventTitle || r.event || 'Event')}</span>
+        </div>
+      `).join('');
+    } catch {
+      el.innerHTML = miniEmpty('⚠️', 'Failed to load registrations');
+    }
+  }
+
+  // ── ACTIVITY FEED (synthesised from multiple sources) ──
+  async function loadActivityFeed() {
+    const el = document.getElementById('activity-list');
+    try {
+      const [blogsRes, eventsRes, regsRes, galleryRes] = await Promise.allSettled([
+        api.get('/blogs?limit=3'),
+        api.get('/events?limit=3'),
+        api.get('/registrations?limit=3'),
+        api.get('/gallery?limit=3'),
+      ]);
+
+      const activities = [];
+
+      const extract = (res, mapFn) => {
+        if (res.status === 'fulfilled' && res.value?.ok) {
+          const data = res.value.data;
+          const items = Array.isArray(data) ? data : (data.data ?? []);
+          items.slice(0, 3).forEach(item => activities.push(mapFn(item)));
+        }
+      };
+
+      extract(blogsRes,   b => ({
+        dot: 'orange', time: b.createdAt || b.date,
+        text: `Blog <strong>${esc(truncate(b.title || 'Untitled', 40))}</strong> was published`
+      }));
+      extract(eventsRes,  e => ({
+        dot: 'yellow', time: e.createdAt || e.date,
+        text: `Event <strong>${esc(truncate(e.title || e.name || 'Event', 40))}</strong> was added`
+      }));
+      extract(regsRes,    r => ({
+        dot: 'green', time: r.createdAt || r.registeredAt,
+        text: `<strong>${esc(r.name || r.fullName || 'Someone')}</strong> registered for an event`
+      }));
+      extract(galleryRes, g => ({
+        dot: 'blue', time: g.createdAt || g.uploadedAt,
+        text: `Image <strong>${esc(truncate(g.title || g.caption || 'Untitled', 40))}</strong> added to gallery`
+      }));
+
+      // Sort by time desc
+      activities.sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
+
+      if (!activities.length) {
+        el.innerHTML = miniEmpty('⚡', 'No recent activity');
+        return;
+      }
+
+      el.innerHTML = activities.slice(0, 8).map(a => `
+        <div class="activity-item">
+          <div class="activity-dot ${a.dot}"></div>
+          <div class="activity-text">
+            ${a.text}
+            <div class="activity-time">${fmtDateTime(a.time)}</div>
+          </div>
+        </div>
+      `).join('');
+    } catch {
+      el.innerHTML = miniEmpty('⚠️', 'Failed to load activity');
+    }
+  }
+
+  // ── HELPERS ─────────────────────────────────────────────
+  function miniEmpty(icon, msg) {
+    return `<div class="mini-empty"><div class="mini-empty-icon">${icon}</div>${msg}</div>`;
+  }
+  function esc(str = '') {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── BOOTSTRAP ───────────────────────────────────────────
+  loadStats();
+  loadRecentBlogs();
+  loadUpcomingEvents();
+  loadRecentRegistrations();
+  loadActivityFeed();
+</script>
+</body>
+</html>

@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blogs — Apex Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+  <style>
+    /* ── BLOGS-SPECIFIC ─────────────────────────────────── */
+
+    /* Blog card grid (optional view toggle) */
+    .view-toggle { display: flex; gap: 4px; }
+    .view-btn {
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .view-btn.active, .view-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+      background: var(--orange-pale);
+    }
+
+    /* Toolbar */
+    .blogs-toolbar {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .blogs-toolbar .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .blogs-toolbar .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      font-size: 0.9rem;
+    }
+    .blogs-toolbar .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .blogs-toolbar .search-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+      background: #fff;
+    }
+    .filter-select {
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-family: var(--font);
+      color: var(--text-2);
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .filter-select:focus { border-color: var(--orange); }
+
+    /* Table card */
+    .table-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .table-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .table-card-count {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 2px 10px;
+    }
+
+    /* Blog thumbnail in table */
+    .blog-thumb {
+      width: 52px;
+      height: 40px;
+      border-radius: 7px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      display: block;
+    }
+    .blog-thumb-placeholder {
+      width: 52px;
+      height: 40px;
+      border-radius: 7px;
+      background: var(--orange-pale);
+      border: 1px solid var(--orange-pale2);
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .blog-title-cell { max-width: 260px; }
+    .blog-title-text {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.875rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+    .blog-excerpt {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      max-width: 250px;
+    }
+
+    /* Stats row above table */
+    .blog-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) {
+      .blog-stats-row { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .blog-stats-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Compact stat card for blogs page */
+    .mini-stat {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mini-stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .mini-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text);
+    }
+    .mini-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Modal wider for blog form */
+    .modal-wide { max-width: 680px; }
+
+    /* Rich textarea */
+    .form-control-content {
+      min-height: 160px;
+      line-height: 1.7;
+      font-size: 0.875rem;
+    }
+
+    /* Tag input area */
+    .tags-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      min-height: 42px;
+      cursor: text;
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .tags-wrap:focus-within {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--orange-pale);
+      color: var(--orange-dark);
+      border: 1px solid var(--orange-pale2);
+      border-radius: 99px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .tag-chip-remove {
+      cursor: pointer;
+      font-size: 0.7rem;
+      line-height: 1;
+      padding: 0 2px;
+      border-radius: 50%;
+      transition: background .1s;
+    }
+    .tag-chip-remove:hover { background: var(--orange-pale2); }
+    .tags-input {
+      border: none;
+      outline: none;
+      font-size: 0.82rem;
+      font-family: var(--font);
+      flex: 1;
+      min-width: 80px;
+      color: var(--text);
+      background: transparent;
+    }
+
+    /* Skeleton shimmer */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--border-light) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* Pagination */
+    .pagination { display: flex; align-items: center; gap: 4px; padding: 14px 20px; border-top: 1px solid var(--border); }
+    .page-info { font-size: 0.82rem; color: var(--text-muted); margin-right: auto; }
+    .page-btn {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: var(--font);
+      color: var(--text-2);
+      display: grid; place-items: center;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+    .page-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; font-weight: 600; }
+    .page-btn:disabled { opacity: .4; cursor: default; }
+
+    /* Empty state in table */
+    .empty-row td {
+      text-align: center;
+      padding: 60px 20px !important;
+    }
+    .empty-row .empty-state { padding: 0; }
+
+    /* Toggle switch for published */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 40px; height: 22px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 99px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      left: 3px; top: 3px;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--green); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle-label { font-size: 0.82rem; color: var(--text-2); font-weight: 500; }
+
+    /* Responsive table */
+    @media (max-width: 768px) {
+      .data-table th:nth-child(n+4),
+      .data-table td:nth-child(n+4) { display: none; }
+      .blogs-toolbar { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ── SIDEBAR ROOT ──────────────────────────────────── -->
+  <div id="sidebar-root"></div>
+
+  <!-- ── MAIN CONTENT ─────────────────────────────────── -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger">☰</button>
+        <div>
+          <div class="topbar-title">Blog Management</div>
+          <div class="topbar-breadcrumb">Admin / Blogs</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openAddModal()">
+          + New Blog
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Stats -->
+      <div class="blog-stats-row" id="stats-row">
+        <div class="mini-stat">
+          <div class="mini-stat-icon orange" style="background:var(--orange-pale)">📝</div>
+          <div>
+            <div class="mini-stat-value" id="stat-total">—</div>
+            <div class="mini-stat-label">Total Blogs</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon green" style="background:var(--green-bg)">✅</div>
+          <div>
+            <div class="mini-stat-value" id="stat-published">—</div>
+            <div class="mini-stat-label">Published</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon yellow" style="background:var(--yellow-bg)">📄</div>
+          <div>
+            <div class="mini-stat-value" id="stat-draft">—</div>
+            <div class="mini-stat-label">Drafts</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon blue" style="background:var(--blue-bg)">🗂️</div>
+          <div>
+            <div class="mini-stat-value" id="stat-categories">—</div>
+            <div class="mini-stat-label">Categories</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="blogs-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search by title, author, category…" />
+        </div>
+        <select id="filter-status" class="filter-select">
+          <option value="">All Status</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+        <select id="filter-category" class="filter-select">
+          <option value="">All Categories</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" id="view-table-btn" title="Table view" onclick="setView('table')">☰</button>
+          <button class="view-btn" id="view-card-btn" title="Card view" onclick="setView('card')">⊞</button>
+        </div>
+      </div>
+
+      <!-- Table Card -->
+      <div class="table-card" id="table-view">
+        <div class="table-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="table-card-title">All Blog Posts</span>
+            <span class="table-card-count" id="visible-count">0 posts</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="blogs-table">
+            <thead>
+              <tr>
+                <th style="width:60px">Image</th>
+                <th>Title &amp; Excerpt</th>
+                <th>Category</th>
+                <th>Author</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th style="width:110px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="blogs-tbody">
+              <tr class="loading-row">
+                <td colspan="7"><div class="loader"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination" style="display:none">
+          <div class="page-info" id="page-info"></div>
+          <div id="page-buttons" style="display:flex;gap:4px;"></div>
+        </div>
+      </div>
+
+      <!-- Card View (hidden by default) -->
+      <div id="card-view" style="display:none">
+        <div class="gallery-grid" id="blogs-card-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-layout -->
+
+
+<!-- ══════════════════════════════════════════════════
+     ADD / EDIT BLOG MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="blog-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">New Blog Post</div>
+      <button class="modal-close" onclick="closeModal('blog-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Hidden edit id -->
+      <input type="hidden" id="edit-id" />
+
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Title <span style="color:var(--red)">*</span></label>
+          <input type="text" id="f-title" class="form-control" placeholder="Enter blog title…" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Author</label>
+          <input type="text" id="f-author" class="form-control" placeholder="Author name" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input type="text" id="f-category" class="form-control" placeholder="e.g. Technology" list="category-datalist" />
+          <datalist id="category-datalist"></datalist>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Excerpt / Short Description</label>
+          <textarea id="f-excerpt" class="form-control" rows="2" placeholder="Brief summary shown in listings…"></textarea>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Content <span style="color:var(--red)">*</span></label>
+          <textarea id="f-content" class="form-control form-control-content" placeholder="Write your blog content here…"></textarea>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Tags <span style="font-weight:400;color:var(--text-muted)">(press Enter or comma to add)</span></label>
+          <div class="tags-wrap" id="tags-wrap">
+            <input type="text" class="tags-input" id="tags-input" placeholder="Add a tag…" />
+          </div>
+          <input type="hidden" id="f-tags" />
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Cover Image</label>
+          <div class="upload-zone" id="image-dropzone">
+            <input type="file" id="f-image" name="image" />
+            <div class="upload-zone-icon">🖼️</div>
+            <div class="upload-zone-text"><strong>Click to upload</strong> or drag &amp; drop</div>
+            <div class="upload-zone-text" style="font-size:0.72rem;margin-top:4px">JPG, PNG, WebP — max 5 MB</div>
+            <img id="f-image-preview" class="upload-preview" alt="Preview" />
+          </div>
+          <!-- Existing image URL when editing -->
+          <div id="existing-image-wrap" style="display:none;margin-top:8px;">
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Current image:</div>
+            <img id="existing-image" style="max-height:100px;border-radius:8px;border:1px solid var(--border)" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Publish Status</label>
+          <div class="toggle-wrap" style="margin-top:8px">
+            <label class="toggle">
+              <input type="checkbox" id="f-published" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label" id="published-label">Draft</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Publish Date</label>
+          <input type="date" id="f-date" class="form-control" />
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('blog-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveBlog()">Publish Blog</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     VIEW BLOG MODAL (read-only preview)
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title" id="view-modal-title">Blog Preview</div>
+      <button class="modal-close" onclick="closeModal('view-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="view-modal-body">
+      <!-- filled dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('view-modal')">Close</button>
+      <button class="btn btn-primary" id="view-edit-btn">✏️ Edit</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="../js/api.js"></script>
+<script>
+  // ── SIDEBAR LOGO PATCH ────────────────────────────────
+  // Replaces the sidebar brand area with the official Apex logo.
+  // Resilient selector cascade handles any class name the template uses.
+  function patchSidebarLogo() {
+    const LOGO_HTML = `
+      <img
+        src="../assets/logo.png"
+        alt="Apex Startup Group"
+        style="
+          width: 52px;
+          height: 52px;
+          object-fit: contain;
+          border-radius: 10px;
+          display: block;
+          flex-shrink: 0;
+        "
+      />
+      <div>
+        <div style="
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: 0.01em;
+          line-height: 1.1;
+        ">Apex</div>
+        <div style="
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 2px;
+        ">Admin Panel</div>
+      </div>
+`;
+    const selectors = [
+      '.sidebar-brand', '.sidebar-logo', '.sidebar-header',
+      '.nav-brand', '.logo-wrap', '.sidebar > .brand',
+      '.sidebar > div:first-child', '.sidebar > nav > div:first-child',
+      'aside > div:first-child',
+    ];
+    let brandEl = null;
+    for (const sel of selectors) {
+      brandEl = document.querySelector(sel);
+      if (brandEl) break;
+    }
+    if (!brandEl) {
+      const root = document.getElementById('sidebar-root');
+      if (root) brandEl = root.querySelector('div');
+    }
+    if (brandEl) {
+      brandEl.style.cssText += 'display:flex!important;align-items:center!important;gap:12px!important;padding:20px 16px 16px!important;';
+      brandEl.innerHTML = LOGO_HTML;
+    }
+  }
+
+// ══════════════════════════════════════════════════════
+//  APEX ADMIN — blogs.js (inline)
+// ══════════════════════════════════════════════════════
+
+// ── AUTH GUARD ────────────────────────────────────────
+if (!Auth.requireAuth()) { /* redirected */ }
+
+// ── INIT LAYOUT ───────────────────────────────────────
+document.getElementById('sidebar-root').innerHTML = renderSidebarLayout('blogs');
+  Sidebar.init();
+  patchSidebarLogo();
+Confirm.init();
+Toast.init();
+
+// ── STATE ─────────────────────────────────────────────
+let allBlogs    = [];
+let filtered    = [];
+let currentPage = 1;
+const PER_PAGE  = 15;
+let editingId   = null;
+let tags        = [];
+let currentView = 'table';
+
+// ── IMAGE HELPERS ─────────────────────────────────────
+/**
+ * Normalise all possible backend field names for the cover image.
+ * Backend stores it as `coverImage` but older records or other
+ * integrations may use `image`, `imageUrl`, or `featuredImage`.
+ */
+function resolveBlogImage(blog) {
+  return (
+    blog.coverImage ||
+    blog.image ||
+    blog.imageUrl ||
+    blog.featuredImage ||
+    ''
+  );
+}
+
+/**
+ * Convert a relative image path coming from the backend
+ * (e.g. "/uploads/blogs/123.jpg") into a full URL.
+ * Absolute URLs (http/https) are passed through unchanged.
+ */
+const IMG_BASE = (() => {
+  // api.js typically targets the same host the admin is served from,
+  // or falls back to localhost:5000 in local dev.
+  if (typeof api !== 'undefined' && api.baseURL) return api.baseURL.replace(/\/+$/, '');
+  return window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : window.location.origin;
+})();
+
+function imgUrl(src) {
+  if (!src) return '';
+  if (/^https?:\/\//i.test(src)) return src;
+  return IMG_BASE + '/' + src.replace(/^\/+/, '');
+}
+
+// ── ESCAPE ────────────────────────────────────────────
+function esc(s = '') {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── LOAD BLOGS ────────────────────────────────────────
+async function loadBlogs() {
+  const tbody = document.getElementById('blogs-tbody');
+  tbody.innerHTML = `<tr class="loading-row"><td colspan="7"><div class="loader"></div></td></tr>`;
+
+  try {
+    const res = await api.get('/blogs');
+    if (!res?.ok) throw new Error(res?.data?.message || 'Failed to fetch blogs');
+
+    allBlogs = Array.isArray(res.data) ? res.data : (res.data.data ?? res.data.blogs ?? []);
+    populateCategoryFilter();
+    applyFilters();
+    updateStats();
+  } catch (err) {
+    tbody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="7">
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <div class="empty-title">Could not load blogs</div>
+            <div class="empty-sub">${esc(err.message)}</div>
+          </div>
+        </td>
+      </tr>`;
+  }
+}
+
+// ── STATS ─────────────────────────────────────────────
+function updateStats() {
+  const total       = allBlogs.length;
+  const published   = allBlogs.filter(b => b.published || b.status === 'published').length;
+  const draft       = total - published;
+  const cats        = new Set(allBlogs.map(b => b.category).filter(Boolean)).size;
+
+  document.getElementById('stat-total').textContent     = total;
+  document.getElementById('stat-published').textContent = published;
+  document.getElementById('stat-draft').textContent     = draft;
+  document.getElementById('stat-categories').textContent = cats;
+}
+
+// ── POPULATE CATEGORY FILTER ──────────────────────────
+function populateCategoryFilter() {
+  const sel = document.getElementById('filter-category');
+  const dl  = document.getElementById('category-datalist');
+  const cats = [...new Set(allBlogs.map(b => b.category).filter(Boolean))].sort();
+
+  const opts = cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.innerHTML = `<option value="">All Categories</option>${opts}`;
+  dl.innerHTML  = cats.map(c => `<option value="${esc(c)}">`).join('');
+}
+
+// ── FILTERS ───────────────────────────────────────────
+function applyFilters() {
+  const q       = document.getElementById('search-input').value.toLowerCase();
+  const status  = document.getElementById('filter-status').value;
+  const cat     = document.getElementById('filter-category').value;
+
+  filtered = allBlogs.filter(b => {
+    const isPublished = b.published || b.status === 'published';
+
+    if (status === 'published' && !isPublished) return false;
+    if (status === 'draft'     && isPublished)  return false;
+    if (cat && b.category !== cat)              return false;
+    if (q) {
+      const haystack = [b.title, b.author?.name || (typeof b.author === 'string' ? b.author : ''), b.category, b.excerpt, (b.tags||[]).join(' ')]
+        .join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+
+  currentPage = 1;
+  renderTable();
+  renderCards();
+}
+
+// ── RENDER TABLE ──────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('blogs-tbody');
+  const total = filtered.length;
+
+  document.getElementById('visible-count').textContent =
+    `${total} post${total !== 1 ? 's' : ''}`;
+
+  if (!total) {
+    tbody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="7">
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title">No blogs found</div>
+            <div class="empty-sub">Try adjusting your search or add a new blog post.</div>
+          </div>
+        </td>
+      </tr>`;
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+
+  const start = (currentPage - 1) * PER_PAGE;
+  const page  = filtered.slice(start, start + PER_PAGE);
+
+  tbody.innerHTML = page.map(b => {
+    const isPublished = b.published || b.status === 'published';
+    const imgSrc      = resolveBlogImage(b);
+    const dateStr     = fmtDate(b.createdAt || b.publishedAt || b.date);
+    const tagArr      = Array.isArray(b.tags) ? b.tags : (typeof b.tags === 'string' ? b.tags.split(',').filter(Boolean) : []);
+
+    return `
+      <tr>
+        <td>
+          ${imgSrc
+            ? `<img class="blog-thumb" src="${esc(imgUrl(imgSrc))}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">`
+            : ''}
+          <div class="blog-thumb-placeholder" style="${imgSrc ? 'display:none' : ''}">📝</div>
+        </td>
+        <td class="blog-title-cell">
+          <span class="blog-title-text" title="${esc(b.title)}">${esc(b.title || 'Untitled')}</span>
+          <span class="blog-excerpt">${esc(truncate(b.excerpt || b.content || '', 80))}</span>
+          ${tagArr.length ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">
+            ${tagArr.slice(0,3).map(t => `<span class="badge badge-gray" style="font-size:.65rem;padding:1px 7px">${esc(t)}</span>`).join('')}
+            ${tagArr.length > 3 ? `<span class="badge badge-gray" style="font-size:.65rem;padding:1px 7px">+${tagArr.length-3}</span>` : ''}
+          </div>` : ''}
+        </td>
+        <td>
+          ${b.category
+            ? `<span class="badge badge-orange">${esc(b.category)}</span>`
+            : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}
+        </td>
+        <td style="font-size:.82rem;color:var(--text-2)">${esc((b.author?.name || (typeof b.author === 'string' ? b.author : '')) || '—')}</td>
+        <td>
+          <span class="badge ${isPublished ? 'badge-green' : 'badge-yellow'}">
+            ${isPublished ? '✓ Published' : '◌ Draft'}
+          </span>
+        </td>
+        <td style="font-size:.78rem;color:var(--text-muted);white-space:nowrap">${dateStr}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-sm btn-secondary" title="View" onclick="viewBlog('${esc(b._id || b.id)}')">👁</button>
+            <button class="btn btn-sm btn-secondary" title="Edit" onclick="editBlog('${esc(b._id || b.id)}')">✏️</button>
+            <button class="btn btn-sm btn-danger" title="Delete" onclick="deleteBlog('${esc(b._id || b.id)}', '${esc(b.title || 'this blog')}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Pagination
+  renderPagination(total);
+}
+
+// ── PAGINATION ────────────────────────────────────────
+function renderPagination(total) {
+  const pages = Math.ceil(total / PER_PAGE);
+  const pag   = document.getElementById('pagination');
+
+  if (pages <= 1) { pag.style.display = 'none'; return; }
+  pag.style.display = 'flex';
+
+  const start = (currentPage - 1) * PER_PAGE + 1;
+  const end   = Math.min(currentPage * PER_PAGE, total);
+  document.getElementById('page-info').textContent = `Showing ${start}–${end} of ${total}`;
+
+  const btns = document.getElementById('page-buttons');
+  btns.innerHTML = '';
+
+  // Prev
+  const prev = mkPageBtn('‹', currentPage <= 1, () => goPage(currentPage - 1));
+  btns.appendChild(prev);
+
+  // Page numbers (show max 7)
+  const range = pageRange(currentPage, pages);
+  range.forEach(p => {
+    if (p === '…') {
+      const el = document.createElement('span');
+      el.textContent = '…';
+      el.style.cssText = 'padding:0 4px;color:var(--text-muted);font-size:.8rem;align-self:center';
+      btns.appendChild(el);
+    } else {
+      const b = mkPageBtn(p, false, () => goPage(p));
+      if (p === currentPage) b.classList.add('active');
+      btns.appendChild(b);
+    }
+  });
+
+  // Next
+  const next = mkPageBtn('›', currentPage >= pages, () => goPage(currentPage + 1));
+  btns.appendChild(next);
+}
+
+function mkPageBtn(label, disabled, onClick) {
+  const b = document.createElement('button');
+  b.className = 'page-btn';
+  b.textContent = label;
+  b.disabled = disabled;
+  if (!disabled) b.addEventListener('click', onClick);
+  return b;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  document.querySelector('.table-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function pageRange(cur, total) {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  if (cur <= 4)   return [1, 2, 3, 4, 5, '…', total];
+  if (cur >= total - 3) return [1, '…', total-4, total-3, total-2, total-1, total];
+  return [1, '…', cur-1, cur, cur+1, '…', total];
+}
+
+// ── CARD VIEW ─────────────────────────────────────────
+function renderCards() {
+  const grid = document.getElementById('blogs-card-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1">
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <div class="empty-title">No blogs found</div>
+          <div class="empty-sub">Try a different filter or add a new post.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(b => {
+    const isPublished = b.published || b.status === 'published';
+    const imgSrc      = resolveBlogImage(b);
+
+    return `
+      <div class="gallery-item">
+        ${imgSrc
+          ? `<img src="${esc(imgUrl(imgSrc))}" alt="${esc(b.title)}" onerror="this.style.background='var(--orange-pale)'">`
+          : `<div style="height:150px;background:var(--orange-pale);display:grid;place-items:center;font-size:2.5rem">📝</div>`}
+        <div class="gallery-item-body">
+          <div class="gallery-item-title" title="${esc(b.title)}">${esc(b.title || 'Untitled')}</div>
+          <div class="gallery-item-meta" style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+            <span>${esc(b.category || '—')}</span>
+            <span class="badge ${isPublished ? 'badge-green' : 'badge-yellow'}" style="font-size:.65rem">
+              ${isPublished ? 'Published' : 'Draft'}
+            </span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="btn btn-sm btn-secondary" style="flex:1;font-size:.72rem" onclick="editBlog('${esc(b._id || b.id)}')">✏️ Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteBlog('${esc(b._id || b.id)}', '${esc(b.title || 'this blog')}')">🗑</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── VIEW TOGGLE ───────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.getElementById('table-view').style.display = v === 'table' ? '' : 'none';
+  document.getElementById('card-view').style.display  = v === 'card'  ? '' : 'none';
+  document.getElementById('view-table-btn').classList.toggle('active', v === 'table');
+  document.getElementById('view-card-btn').classList.toggle('active',  v === 'card');
+}
+
+// ── VIEW BLOG MODAL ───────────────────────────────────
+function viewBlog(id) {
+  const b = allBlogs.find(b => (b._id || b.id) === id);
+  if (!b) return;
+
+  const isPublished = b.published || b.status === 'published';
+  const imgSrc      = resolveBlogImage(b);
+  const tagArr      = Array.isArray(b.tags) ? b.tags : (typeof b.tags === 'string' ? b.tags.split(',').filter(Boolean) : []);
+
+  document.getElementById('view-modal-title').textContent = b.title || 'Blog Preview';
+  document.getElementById('view-modal-body').innerHTML = `
+    ${imgSrc ? `<img src="${esc(imgUrl(imgSrc))}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:16px;border:1px solid var(--border)">` : ''}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      ${b.category ? `<span class="badge badge-orange">${esc(b.category)}</span>` : ''}
+      <span class="badge ${isPublished ? 'badge-green' : 'badge-yellow'}">${isPublished ? 'Published' : 'Draft'}</span>
+      ${tagArr.map(t => `<span class="badge badge-gray" style="font-size:.7rem">${esc(t)}</span>`).join('')}
+    </div>
+    <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:8px">${esc(b.title || '')}</h2>
+    <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap">
+      ${(b.author?.name || (typeof b.author === 'string' ? b.author : '')) ? `<span>✍️ ${esc(b.author?.name || b.author)}</span>` : ''}
+      <span>📅 ${fmtDate(b.createdAt || b.publishedAt || b.date)}</span>
+    </div>
+    ${b.excerpt ? `<p style="font-size:.875rem;color:var(--text-2);font-style:italic;padding:12px;background:var(--bg);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;margin-bottom:14px">${esc(b.excerpt)}</p>` : ''}
+    <div style="font-size:.875rem;color:var(--text-2);line-height:1.8;white-space:pre-wrap">${esc(b.content || '')}</div>
+  `;
+  document.getElementById('view-edit-btn').onclick = () => {
+    closeModal('view-modal');
+    editBlog(id);
+  };
+  openModal('view-modal');
+}
+
+// ── ADD MODAL ─────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  resetForm();
+  document.getElementById('modal-title').textContent = 'New Blog Post';
+  document.getElementById('save-btn').textContent = '✓ Publish Blog';
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  openModal('blog-modal');
+}
+
+// ── EDIT BLOG ─────────────────────────────────────────
+function editBlog(id) {
+  const b = allBlogs.find(b => (b._id || b.id) === id);
+  if (!b) return;
+
+  editingId = b._id || b.id;
+  resetForm();
+
+  document.getElementById('modal-title').textContent = 'Edit Blog Post';
+  document.getElementById('save-btn').textContent    = '✓ Save Changes';
+
+  document.getElementById('f-title').value    = b.title || '';
+  // C) Handle author as object or plain string
+  document.getElementById('f-author').value   = (b.author && typeof b.author === 'object' ? b.author.name : b.author) || '';
+  document.getElementById('f-category').value = b.category || '';
+  document.getElementById('f-excerpt').value  = b.excerpt || '';
+  // C) Clear then set content to reliably preload existing value
+  const contentEl = document.getElementById('f-content');
+  contentEl.value = '';
+  contentEl.value = b.content || '';
+  document.getElementById('f-published').checked = !!(b.published || b.status === 'published');
+  updatePublishLabel();
+
+  const dateVal = b.publishedAt || b.createdAt || b.date;
+  if (dateVal) {
+    try { document.getElementById('f-date').value = new Date(dateVal).toISOString().split('T')[0]; }
+    catch {}
+  }
+
+  // C+A) Tags — normalise to array regardless of how the API returns them
+  const rawTags = b.tags;
+  const tagArr = Array.isArray(rawTags)
+    ? rawTags
+    : String(rawTags || '').split(',').map(t => t.trim()).filter(Boolean);
+  tags = [...tagArr];
+  renderTags();
+
+  // C) Existing image — show current image so user knows what's set;
+  //    only replaced if user selects a new file
+  const imgSrc = resolveBlogImage(b);
+  if (imgSrc) {
+    const el = document.getElementById('existing-image');
+    el.src = imgUrl(imgSrc);
+    document.getElementById('existing-image-wrap').style.display = '';
+  }
+
+  openModal('blog-modal');
+}
+
+// ── SAVE (ADD / EDIT) ─────────────────────────────────
+async function saveBlog() {
+  const title   = document.getElementById('f-title').value.trim();
+
+  // B) Explicitly capture content from the textarea element
+  const content = document.getElementById('f-content')?.value?.trim() || '';
+
+  if (!title)   { Toast.error('Title is required.'); document.getElementById('f-title').focus(); return; }
+  if (!content) { Toast.error('Content is required.'); document.getElementById('f-content').focus(); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving…';
+
+  try {
+    const imageFile = document.getElementById('f-image').files[0];
+    let res;
+
+    // A) Safe tags handling — tags is always an array, but guard anyway
+    const cleanTags = Array.isArray(tags)
+      ? tags
+      : String(tags || '')
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean);
+
+    if (imageFile) {
+      // D) FormData path — only when an image file is selected
+      const fd = new FormData();
+      fd.append('title',    title);
+      fd.append('author',   document.getElementById('f-author').value.trim());
+      fd.append('category', document.getElementById('f-category').value.trim());
+      fd.append('excerpt',  document.getElementById('f-excerpt').value.trim());
+      fd.append('content',  content);                      // B) use captured content
+      fd.append('tags',     JSON.stringify(cleanTags));     // A) use cleanTags
+      fd.append('status',   document.getElementById('f-published').checked ? 'published' : 'draft');
+      fd.append('image',    imageFile);
+
+      res = editingId
+        ? await api.putForm(`/blogs/${editingId}`, fd)
+        : await api.postForm('/blogs', fd);
+    } else {
+      // D) JSON path — no image file selected
+      const payload = {
+        title,
+        author:   document.getElementById('f-author').value.trim(),
+        category: document.getElementById('f-category').value.trim(),
+        excerpt:  document.getElementById('f-excerpt').value.trim(),
+        content,                                           // B) use captured content
+        tags:     cleanTags,                               // A) use cleanTags
+        status:   document.getElementById('f-published').checked ? 'published' : 'draft',
+      };
+
+      res = editingId
+        ? await api.put(`/blogs/${editingId}`, payload)
+        : await api.post('/blogs', payload);
+    }
+
+    if (!res?.ok) throw new Error(res?.data?.message || 'Save failed');
+
+    Toast.success(editingId ? 'Blog updated successfully!' : 'Blog published successfully!');
+    closeModal('blog-modal');
+    await loadBlogs();
+  } catch (err) {
+    Toast.error(err.message || 'An error occurred.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingId ? '✓ Save Changes' : '✓ Publish Blog';
+  }
+}
+
+// ── DELETE BLOG ───────────────────────────────────────
+async function deleteBlog(id, title) {
+  const ok = await Confirm.show(
+    'Delete Blog Post',
+    `Are you sure you want to delete "${title}"? This action cannot be undone.`
+  );
+  if (!ok) return;
+
+  try {
+    const res = await api.delete(`/blogs/${id}`);
+    if (!res?.ok) throw new Error(res?.data?.message || 'Delete failed');
+    Toast.success('Blog deleted.');
+    await loadBlogs();
+  } catch (err) {
+    Toast.error(err.message || 'Could not delete blog.');
+  }
+}
+
+// ── RESET FORM ────────────────────────────────────────
+function resetForm() {
+  ['f-title','f-author','f-category','f-excerpt','f-content','f-date'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-published').checked = false;
+  updatePublishLabel();
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-image-preview').style.display = 'none';
+  document.getElementById('existing-image-wrap').style.display = 'none';
+  tags = [];
+  renderTags();
+}
+
+// ── TAGS ──────────────────────────────────────────────
+function renderTags() {
+  const wrap = document.getElementById('tags-wrap');
+  const input = document.getElementById('tags-input');
+
+  // Remove existing chips
+  wrap.querySelectorAll('.tag-chip').forEach(c => c.remove());
+
+  tags.forEach((tag, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${esc(tag)}<span class="tag-chip-remove" onclick="removeTag(${i})">✕</span>`;
+    wrap.insertBefore(chip, input);
+  });
+
+  document.getElementById('f-tags').value = tags.join(',');
+}
+
+function removeTag(i) {
+  tags.splice(i, 1);
+  renderTags();
+}
+
+document.getElementById('tags-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,/g, '');
+    if (val && !tags.includes(val)) {
+      tags.push(val);
+      renderTags();
+    }
+    e.target.value = '';
+  }
+  if (e.key === 'Backspace' && !e.target.value && tags.length) {
+    tags.pop();
+    renderTags();
+  }
+});
+
+document.getElementById('tags-wrap').addEventListener('click', () => {
+  document.getElementById('tags-input').focus();
+});
+
+// ── PUBLISH TOGGLE ────────────────────────────────────
+document.getElementById('f-published').addEventListener('change', updatePublishLabel);
+function updatePublishLabel() {
+  document.getElementById('published-label').textContent =
+    document.getElementById('f-published').checked ? 'Published' : 'Draft';
+}
+
+// ── IMAGE PREVIEW & DROPZONE ──────────────────────────
+setupImagePreview('f-image', 'f-image-preview');
+setupDropzone('image-dropzone');
+
+// ── SEARCH & FILTER EVENTS ────────────────────────────
+document.getElementById('search-input').addEventListener('input',    applyFilters);
+document.getElementById('filter-status').addEventListener('change',  applyFilters);
+document.getElementById('filter-category').addEventListener('change', applyFilters);
+
+// ── CLOSE MODAL ON OVERLAY CLICK ─────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── BOOTSTRAP ────────────────────────────────────────
+loadBlogs();
+</script>
+</body>
+</html>

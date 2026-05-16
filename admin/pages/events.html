@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Events — Apex Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+  <style>
+    /* ── EVENTS-SPECIFIC ──────────────────────────────── */
+
+    /* Stats row */
+    .event-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .event-stats-row { grid-template-columns: 1fr 1fr; } }
+
+    .mini-stat {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mini-stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .mini-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.4rem; font-weight: 800;
+      line-height: 1; color: var(--text);
+    }
+    .mini-stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Toolbar */
+    .events-toolbar {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-icon {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted); pointer-events: none; font-size: 0.9rem;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem; font-family: var(--font);
+      color: var(--text); background: var(--bg); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+      background: #fff;
+    }
+    .filter-select {
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem; font-family: var(--font);
+      color: var(--text-2); background: #fff;
+      cursor: pointer; outline: none;
+      transition: border-color .15s;
+    }
+    .filter-select:focus { border-color: var(--orange); }
+
+    /* View toggle */
+    .view-toggle { display: flex; gap: 4px; }
+    .view-btn {
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: 6px; background: #fff;
+      cursor: pointer; font-size: 0.9rem;
+      color: var(--text-muted);
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .view-btn.active, .view-btn:hover {
+      border-color: var(--orange); color: var(--orange);
+      background: var(--orange-pale);
+    }
+
+    /* Table card */
+    .table-card {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .table-card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .table-card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 700; color: var(--text);
+    }
+    .table-card-count {
+      font-size: 0.78rem; color: var(--text-muted);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 99px; padding: 2px 10px;
+    }
+
+    /* Event thumb in table */
+    .event-thumb {
+      width: 52px; height: 40px;
+      border-radius: 7px; object-fit: cover;
+      border: 1px solid var(--border); display: block;
+    }
+    .event-thumb-placeholder {
+      width: 52px; height: 40px;
+      border-radius: 7px;
+      background: var(--orange-pale);
+      border: 1px solid var(--orange-pale2);
+      display: grid; place-items: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+
+    .event-title-cell { max-width: 240px; }
+    .event-title-text {
+      font-weight: 600; color: var(--text);
+      font-size: 0.875rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: block;
+    }
+    .event-location {
+      font-size: 0.72rem; color: var(--text-muted);
+      margin-top: 2px; display: block;
+    }
+
+    /* Event cards grid */
+    .events-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .event-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: box-shadow .2s, transform .15s;
+      position: relative;
+    }
+    .event-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .event-card-img {
+      width: 100%; height: 160px;
+      object-fit: cover; display: block;
+    }
+    .event-card-img-placeholder {
+      width: 100%; height: 160px;
+      background: linear-gradient(135deg, var(--orange-pale) 0%, var(--orange-pale2) 100%);
+      display: grid; place-items: center;
+      font-size: 3rem;
+    }
+    .event-card-body { padding: 14px 16px; }
+    .event-card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 700;
+      color: var(--text); margin-bottom: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .event-card-meta {
+      font-size: 0.75rem; color: var(--text-muted);
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .event-card-meta span { display: flex; align-items: center; gap: 5px; }
+    .event-card-footer {
+      padding: 10px 16px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--border-light);
+    }
+    .event-card-actions { display: flex; gap: 6px; }
+    .event-card-badge { position: absolute; top: 10px; left: 10px; }
+
+    /* Status badge special */
+    .badge-upcoming { background: #EFF6FF; color: var(--blue); }
+    .badge-ongoing  { background: var(--green-bg); color: var(--green); }
+    .badge-past     { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-cancelled { background: var(--red-bg); color: var(--red); }
+
+    /* Modal wide */
+    .modal-wide { max-width: 700px; }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--border-light) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* Pagination */
+    .pagination { display: flex; align-items: center; gap: 4px; padding: 14px 20px; border-top: 1px solid var(--border); }
+    .page-info { font-size: 0.82rem; color: var(--text-muted); margin-right: auto; }
+    .page-btn {
+      width: 30px; height: 30px; border-radius: 6px;
+      border: 1.5px solid var(--border); background: #fff;
+      cursor: pointer; font-size: 0.8rem; font-family: var(--font);
+      color: var(--text-2); display: grid; place-items: center;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+    .page-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; font-weight: 600; }
+    .page-btn:disabled { opacity: .4; cursor: default; }
+
+    .empty-row td { text-align: center; padding: 60px 20px !important; }
+    .empty-row .empty-state { padding: 0; }
+
+    /* Toggle */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--border); border-radius: 99px;
+      cursor: pointer; transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; left: 3px; top: 3px;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--green); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle-label { font-size: 0.82rem; color: var(--text-2); font-weight: 500; }
+
+    /* Date-time inline */
+    .datetime-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .datetime-row { grid-template-columns: 1fr; } }
+
+    @media (max-width: 768px) {
+      .data-table th:nth-child(n+5),
+      .data-table td:nth-child(n+5) { display: none; }
+    }
+
+    /* View event detail modal */
+    .detail-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 560px) { .detail-info-grid { grid-template-columns: 1fr; } }
+    .detail-info-item { }
+    .detail-info-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+    .detail-info-value { font-size: 0.875rem; color: var(--text-2); font-weight: 500; }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ── SIDEBAR ROOT ──────────────────────────────────── -->
+  <div id="sidebar-root"></div>
+
+  <!-- ── MAIN CONTENT ─────────────────────────────────── -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger">☰</button>
+        <div>
+          <div class="topbar-title">Event Management</div>
+          <div class="topbar-breadcrumb">Admin / Events</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openAddModal()">+ New Event</button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Stats -->
+      <div class="event-stats-row">
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--orange-pale)">📅</div>
+          <div>
+            <div class="mini-stat-value" id="stat-total">—</div>
+            <div class="mini-stat-label">Total Events</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--blue-bg)">🔜</div>
+          <div>
+            <div class="mini-stat-value" id="stat-upcoming">—</div>
+            <div class="mini-stat-label">Upcoming</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--green-bg)">✅</div>
+          <div>
+            <div class="mini-stat-value" id="stat-ongoing">—</div>
+            <div class="mini-stat-label">Ongoing</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--bg)">🗓️</div>
+          <div>
+            <div class="mini-stat-value" id="stat-past">—</div>
+            <div class="mini-stat-label">Past</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="events-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search events by title, location…" />
+        </div>
+        <select id="filter-status" class="filter-select">
+          <option value="">All Status</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="past">Past</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" id="view-table-btn" title="Table view" onclick="setView('table')">☰</button>
+          <button class="view-btn" id="view-card-btn" title="Card view" onclick="setView('card')">⊞</button>
+        </div>
+      </div>
+
+      <!-- Table View -->
+      <div class="table-card" id="table-view">
+        <div class="table-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="table-card-title">All Events</span>
+            <span class="table-card-count" id="visible-count">0 events</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="events-table">
+            <thead>
+              <tr>
+                <th style="width:60px">Image</th>
+                <th>Title &amp; Location</th>
+                <th>Date &amp; Time</th>
+                <th>Status</th>
+                <th>Registrations</th>
+                <th style="width:110px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="events-tbody">
+              <tr class="loading-row">
+                <td colspan="6"><div class="loader"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination" style="display:none">
+          <div class="page-info" id="page-info"></div>
+          <div id="page-buttons" style="display:flex;gap:4px;"></div>
+        </div>
+      </div>
+
+      <!-- Card View -->
+      <div id="card-view" style="display:none">
+        <div class="events-card-grid" id="events-card-grid"></div>
+        <div style="margin-top:16px" id="card-pagination"></div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-layout -->
+
+
+<!-- ══════════════════════════════════════════════════
+     ADD / EDIT EVENT MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">New Event</div>
+      <button class="modal-close" onclick="closeModal('event-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Event Title <span style="color:var(--red)">*</span></label>
+          <input type="text" id="f-title" class="form-control" placeholder="Enter event title…" />
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Description</label>
+          <textarea id="f-description" class="form-control" rows="3" placeholder="Describe the event…"></textarea>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Location</label>
+          <input type="text" id="f-location" class="form-control" placeholder="Venue or address…" />
+        </div>
+
+        <!-- Date / Time row -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Date &amp; Time</label>
+          <div class="datetime-row">
+            <div>
+              <label class="form-label" style="font-weight:400;color:var(--text-muted)">Start Date</label>
+              <input type="date" id="f-start-date" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label" style="font-weight:400;color:var(--text-muted)">Start Time</label>
+              <input type="time" id="f-start-time" class="form-control" />
+            </div>
+            <div>
+              <label class="form-label" style="font-weight:400;color:var(--text-muted)">End Date</label>
+              <input type="date" id="f-end-date" class="form-control" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">End Time</label>
+          <input type="time" id="f-end-time" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Max Registrations</label>
+          <input type="number" id="f-max-reg" class="form-control" placeholder="Leave blank for unlimited" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="f-status" class="form-control">
+            <option value="upcoming">Upcoming</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="past">Past</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:24px">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="f-published" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label" id="published-label">Draft</span>
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Event Image</label>
+          <!-- Existing image -->
+          <div id="existing-image-wrap" style="display:none;margin-bottom:10px">
+            <img id="existing-image" src="" style="max-height:120px;border-radius:8px;border:1px solid var(--border);" />
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">Current image — upload a new one to replace</div>
+          </div>
+          <div class="upload-zone" id="image-dropzone">
+            <input type="file" id="f-image" accept="image/*" />
+            <div class="upload-zone-icon">🖼️</div>
+            <div class="upload-zone-text"><strong>Click to upload</strong> or drag &amp; drop</div>
+            <div class="upload-zone-text" style="font-size:.75rem;margin-top:4px">PNG, JPG, WEBP up to 5MB</div>
+            <img id="f-image-preview" class="upload-preview" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('event-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveEvent()">✓ Create Event</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     VIEW EVENT MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title" id="view-modal-title">Event Details</div>
+      <button class="modal-close" onclick="closeModal('view-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="view-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('view-modal')">Close</button>
+      <button class="btn btn-primary" id="view-edit-btn">✏️ Edit Event</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="../js/api.js"></script>
+<script>
+  // ── SIDEBAR LOGO PATCH ────────────────────────────────
+  // Replaces the sidebar brand area with the official Apex logo.
+  // Resilient selector cascade handles any class name the template uses.
+  function patchSidebarLogo() {
+    const LOGO_HTML = `
+      <img
+        src="../assets/logo.png"
+        alt="Apex Startup Group"
+        style="
+          width: 52px;
+          height: 52px;
+          object-fit: contain;
+          border-radius: 10px;
+          display: block;
+          flex-shrink: 0;
+        "
+      />
+      <div>
+        <div style="
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: 0.01em;
+          line-height: 1.1;
+        ">Apex</div>
+        <div style="
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 2px;
+        ">Admin Panel</div>
+      </div>
+`;
+    const selectors = [
+      '.sidebar-brand', '.sidebar-logo', '.sidebar-header',
+      '.nav-brand', '.logo-wrap', '.sidebar > .brand',
+      '.sidebar > div:first-child', '.sidebar > nav > div:first-child',
+      'aside > div:first-child',
+    ];
+    let brandEl = null;
+    for (const sel of selectors) {
+      brandEl = document.querySelector(sel);
+      if (brandEl) break;
+    }
+    if (!brandEl) {
+      const root = document.getElementById('sidebar-root');
+      if (root) brandEl = root.querySelector('div');
+    }
+    if (brandEl) {
+      brandEl.style.cssText += 'display:flex!important;align-items:center!important;gap:12px!important;padding:20px 16px 16px!important;';
+      brandEl.innerHTML = LOGO_HTML;
+    }
+  }
+
+'use strict';
+
+// ── GUARD ─────────────────────────────────────────────
+if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+// ── INJECT SIDEBAR ────────────────────────────────────
+document.getElementById('sidebar-root').innerHTML = renderSidebarLayout('events');
+  Sidebar.init();
+  patchSidebarLogo();
+Confirm.init();
+
+// ── STATE ─────────────────────────────────────────────
+let allEvents    = [];
+let filtered     = [];
+let currentPage  = 1;
+const PAGE_SIZE  = 10;
+let editingId    = null;
+let currentView  = 'table';
+
+// ── ESCAPE HELPER ─────────────────────────────────────
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── STATUS ────────────────────────────────────────────
+function getEventStatus(event) {
+  if (event.status) return event.status;
+  const now   = new Date();
+  const start = event.startDate ? new Date(event.startDate) : null;
+  const end   = event.endDate   ? new Date(event.endDate)   : null;
+  if (!start) return 'upcoming';
+  if (end && now > end) return 'past';
+  if (now >= start && (!end || now <= end)) return 'ongoing';
+  return 'upcoming';
+}
+
+function statusBadge(status) {
+  const map = {
+    upcoming:  ['badge-upcoming', '🔜 Upcoming'],
+    ongoing:   ['badge-green',    '🟢 Ongoing'],
+    past:      ['badge-past',     '🗓️ Past'],
+    cancelled: ['badge-red',      '❌ Cancelled'],
+  };
+  const [cls, label] = map[status] || map['upcoming'];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ── LOAD EVENTS ───────────────────────────────────────
+async function loadEvents() {
+  try {
+    const res = await api.get('/events/admin/all');
+    if (!res?.ok) throw new Error(res?.data?.message || 'Failed to load');
+    // API returns { success, total, data: [...] }
+    allEvents = res.data?.data || res.data?.events || res.data || [];
+    updateStats();
+    applyFilters();
+  } catch (err) {
+    document.getElementById('events-tbody').innerHTML = `
+      <tr class="empty-row"><td colspan="6">
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-title">Could not load events</div>
+          <div class="empty-sub">${esc(err.message)}</div>
+        </div>
+      </td></tr>`;
+    Toast.error('Failed to load events.');
+  }
+}
+
+// ── STATS ─────────────────────────────────────────────
+function updateStats() {
+  const statuses = allEvents.map(e => getEventStatus(e));
+  document.getElementById('stat-total').textContent    = allEvents.length;
+  document.getElementById('stat-upcoming').textContent = statuses.filter(s => s === 'upcoming').length;
+  document.getElementById('stat-ongoing').textContent  = statuses.filter(s => s === 'ongoing').length;
+  document.getElementById('stat-past').textContent     = statuses.filter(s => s === 'past').length;
+}
+
+// ── FILTER ────────────────────────────────────────────
+function applyFilters() {
+  const q      = document.getElementById('search-input').value.toLowerCase();
+  const status = document.getElementById('filter-status').value;
+
+  filtered = allEvents.filter(e => {
+    const matchQ  = !q || (e.title || '').toLowerCase().includes(q) || (e.location || '').toLowerCase().includes(q);
+    const evtStat = getEventStatus(e);
+    const matchS  = !status || evtStat === status;
+    return matchQ && matchS;
+  });
+
+  currentPage = 1;
+  renderView();
+}
+
+// ── VIEW TOGGLE ───────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.getElementById('table-view').style.display = v === 'table' ? '' : 'none';
+  document.getElementById('card-view').style.display  = v === 'card'  ? '' : 'none';
+  document.getElementById('view-table-btn').classList.toggle('active', v === 'table');
+  document.getElementById('view-card-btn').classList.toggle('active',  v === 'card');
+  renderView();
+}
+
+function renderView() {
+  if (currentView === 'table') renderTable();
+  else renderCards();
+}
+
+// ── RENDER TABLE ──────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('events-tbody');
+  const count = document.getElementById('visible-count');
+
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr class="empty-row"><td colspan="6">
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <div class="empty-title">No events found</div>
+          <div class="empty-sub">Try adjusting your search or filters, or create a new event.</div>
+        </div>
+      </td></tr>`;
+    count.textContent = '0 events';
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+
+  const total = filtered.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (currentPage > pages) currentPage = 1;
+  const slice = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  count.textContent = `${total} event${total !== 1 ? 's' : ''}`;
+
+  tbody.innerHTML = slice.map(e => {
+    const id      = e._id || e.id;
+    const status  = getEventStatus(e);
+    const imgSrc  = e.image || e.thumbnail || e.coverImage;
+    const regCount = e.registrationsCount ?? e.registrations?.length ?? '—';
+    const maxReg  = e.maxRegistrations ? ` / ${e.maxRegistrations}` : '';
+
+    return `
+    <tr>
+      <td>
+        ${imgSrc
+          ? `<img src="${esc(imgUrl(imgSrc))}" class="event-thumb" onerror="this.outerHTML='<div class=event-thumb-placeholder>📅</div>'" />`
+          : `<div class="event-thumb-placeholder">📅</div>`}
+      </td>
+      <td class="event-title-cell">
+        <span class="event-title-text" title="${esc(e.title)}">${esc(e.title || '—')}</span>
+        ${e.location ? `<span class="event-location">📍 ${esc(e.location)}</span>` : ''}
+      </td>
+      <td style="font-size:.8rem;color:var(--text-2)">
+        ${e.startDate ? `<div>${fmtDate(e.startDate)}</div>` : '—'}
+        ${e.startTime ? `<div style="color:var(--text-muted)">${esc(e.startTime)}</div>` : ''}
+      </td>
+      <td>${statusBadge(status)}</td>
+      <td style="font-size:.82rem;color:var(--text-2)">${regCount}${maxReg}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-secondary" onclick="viewEvent('${id}')" title="View">👁</button>
+          <button class="btn btn-sm btn-secondary" onclick="editEvent('${id}')" title="Edit">✏️</button>
+          <button class="btn btn-sm btn-danger"    onclick="deleteEvent('${id}', '${esc(e.title)}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination(total, pages);
+}
+
+// ── RENDER CARDS ──────────────────────────────────────
+function renderCards() {
+  const grid = document.getElementById('events-card-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">📅</div>
+        <div class="empty-title">No events found</div>
+        <div class="empty-sub">Try adjusting filters or create a new event.</div>
+      </div>`;
+    return;
+  }
+
+  const total  = filtered.length;
+  const pages  = Math.ceil(total / PAGE_SIZE);
+  const slice  = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  grid.innerHTML = slice.map(e => {
+    const id     = e._id || e.id;
+    const status = getEventStatus(e);
+    const imgSrc = e.image || e.thumbnail || e.coverImage;
+    const regCount = e.registrationsCount ?? e.registrations?.length ?? 0;
+
+    return `
+    <div class="event-card">
+      <span class="event-card-badge">${statusBadge(status)}</span>
+      ${imgSrc
+        ? `<img src="${esc(imgUrl(imgSrc))}" class="event-card-img" onerror="this.outerHTML='<div class=event-card-img-placeholder>📅</div>'" />`
+        : `<div class="event-card-img-placeholder">📅</div>`}
+      <div class="event-card-body">
+        <div class="event-card-title" title="${esc(e.title)}">${esc(e.title || '—')}</div>
+        <div class="event-card-meta">
+          ${e.startDate ? `<span>📅 ${fmtDate(e.startDate)}${e.startTime ? ' · ' + esc(e.startTime) : ''}</span>` : ''}
+          ${e.location  ? `<span>📍 ${esc(e.location)}</span>` : ''}
+          <span>👤 ${regCount} registration${regCount !== 1 ? 's' : ''}${e.maxRegistrations ? ' / ' + e.maxRegistrations : ''}</span>
+        </div>
+      </div>
+      <div class="event-card-footer">
+        <div class="event-card-actions">
+          <button class="btn btn-sm btn-secondary" onclick="viewEvent('${id}')">👁 View</button>
+          <button class="btn btn-sm btn-secondary" onclick="editEvent('${id}')">✏️ Edit</button>
+          <button class="btn btn-sm btn-danger"    onclick="deleteEvent('${id}', '${esc(e.title)}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Card pagination
+  const cardPag = document.getElementById('card-pagination');
+  if (pages > 1) {
+    cardPag.innerHTML = renderPaginationHTML(total, pages);
+  } else {
+    cardPag.innerHTML = '';
+  }
+}
+
+// ── PAGINATION ────────────────────────────────────────
+function renderPagination(total, pages) {
+  const pag = document.getElementById('pagination');
+  if (pages <= 1) { pag.style.display = 'none'; return; }
+  pag.style.display = 'flex';
+  document.getElementById('page-info').textContent =
+    `Showing ${(currentPage-1)*PAGE_SIZE + 1}–${Math.min(currentPage*PAGE_SIZE, total)} of ${total}`;
+  const btns = document.getElementById('page-buttons');
+  btns.innerHTML = '';
+
+  const prev = document.createElement('button');
+  prev.className = 'page-btn'; prev.textContent = '‹'; prev.disabled = currentPage === 1;
+  prev.onclick = () => { currentPage--; renderView(); };
+  btns.appendChild(prev);
+
+  for (let i = 1; i <= pages; i++) {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (i === currentPage ? ' active' : '');
+    b.textContent = i;
+    b.onclick = (p => () => { currentPage = p; renderView(); })(i);
+    btns.appendChild(b);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'page-btn'; next.textContent = '›'; next.disabled = currentPage === pages;
+  next.onclick = () => { currentPage++; renderView(); };
+  btns.appendChild(next);
+}
+
+function renderPaginationHTML(total, pages) {
+  let html = `<div style="display:flex;align-items:center;gap:4px;padding:8px 0">
+    <span class="page-info">Showing ${(currentPage-1)*PAGE_SIZE+1}–${Math.min(currentPage*PAGE_SIZE,total)} of ${total}</span>`;
+  html += `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="currentPage--;renderView()">‹</button>`;
+  for (let i = 1; i <= pages; i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="currentPage=${i};renderView()">${i}</button>`;
+  }
+  html += `<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="currentPage++;renderView()">›</button></div>`;
+  return html;
+}
+
+// ── VIEW EVENT MODAL ──────────────────────────────────
+function viewEvent(id) {
+  const e = allEvents.find(e => (e._id || e.id) === id);
+  if (!e) return;
+  const status  = getEventStatus(e);
+  const imgSrc  = e.image || e.thumbnail || e.coverImage;
+  const regCount = e.registrationsCount ?? e.registrations?.length ?? '—';
+  const maxReg  = e.maxRegistrations || 'Unlimited';
+
+  document.getElementById('view-modal-title').textContent = e.title || 'Event Details';
+  document.getElementById('view-modal-body').innerHTML = `
+    ${imgSrc ? `<img src="${esc(imgUrl(imgSrc))}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:16px;border:1px solid var(--border)">` : ''}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      ${statusBadge(status)}
+      ${e.published ? '<span class="badge badge-green">Published</span>' : '<span class="badge badge-yellow">Draft</span>'}
+    </div>
+    <h2 style="font-family:var(--font-display);font-size:1.25rem;font-weight:800;color:var(--text);margin-bottom:14px">${esc(e.title || '')}</h2>
+    <div class="detail-info-grid">
+      <div class="detail-info-item">
+        <div class="detail-info-label">📅 Start Date</div>
+        <div class="detail-info-value">${e.startDate ? fmtDate(e.startDate) : '—'}${e.startTime ? ' at ' + esc(e.startTime) : ''}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label">🏁 End Date</div>
+        <div class="detail-info-value">${e.endDate ? fmtDate(e.endDate) : '—'}${e.endTime ? ' at ' + esc(e.endTime) : ''}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label">📍 Location</div>
+        <div class="detail-info-value">${esc(e.location || '—')}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label">👤 Registrations</div>
+        <div class="detail-info-value">${regCount} / ${maxReg}</div>
+      </div>
+    </div>
+    ${e.description ? `<div style="font-size:.875rem;color:var(--text-2);line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg);border-radius:8px">${esc(e.description)}</div>` : ''}
+  `;
+  document.getElementById('view-edit-btn').onclick = () => {
+    closeModal('view-modal');
+    editEvent(id);
+  };
+  openModal('view-modal');
+}
+
+// ── ADD MODAL ─────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  resetForm();
+  document.getElementById('modal-title').textContent = 'New Event';
+  document.getElementById('save-btn').textContent    = '✓ Create Event';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-start-date').value = today;
+  openModal('event-modal');
+}
+
+// ── EDIT EVENT ────────────────────────────────────────
+function editEvent(id) {
+  const e = allEvents.find(e => (e._id || e.id) === id);
+  if (!e) return;
+
+  editingId = e._id || e.id;
+  resetForm();
+
+  document.getElementById('modal-title').textContent = 'Edit Event';
+  document.getElementById('save-btn').textContent    = '✓ Save Changes';
+
+  document.getElementById('f-title').value       = e.title       || '';
+  document.getElementById('f-description').value = e.description || '';
+  document.getElementById('f-location').value    = e.location    || '';
+  document.getElementById('f-status').value      = e.status      || 'upcoming';
+  document.getElementById('f-max-reg').value     = e.maxRegistrations || '';
+  document.getElementById('f-published').checked = !!(e.published);
+  updatePublishLabel();
+
+  if (e.startDate) {
+    try { document.getElementById('f-start-date').value = new Date(e.startDate).toISOString().split('T')[0]; } catch {}
+  }
+  if (e.endDate) {
+    try { document.getElementById('f-end-date').value = new Date(e.endDate).toISOString().split('T')[0]; } catch {}
+  }
+  document.getElementById('f-start-time').value = e.startTime || '';
+  document.getElementById('f-end-time').value   = e.endTime   || '';
+
+  const imgSrc = e.image || e.thumbnail || e.coverImage;
+  if (imgSrc) {
+    document.getElementById('existing-image').src = imgUrl(imgSrc);
+    document.getElementById('existing-image-wrap').style.display = '';
+  }
+  openModal('event-modal');
+}
+
+// ── SAVE (ADD / EDIT) ─────────────────────────────────
+async function saveEvent() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { Toast.error('Event title is required.'); document.getElementById('f-title').focus(); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Saving…';
+
+  try {
+    // Always use FormData — works for both text-only and image uploads.
+    // The backend uses safeParseJSON so plain string fields like location
+    // are never blindly JSON.parse()'d.
+    const fd = new FormData();
+    fd.append('title',            title);
+    fd.append('description',      document.getElementById('f-description').value.trim());
+    fd.append('location',         document.getElementById('f-location').value.trim());
+    fd.append('startDate',        document.getElementById('f-start-date').value);
+    fd.append('startTime',        document.getElementById('f-start-time').value);
+    fd.append('endDate',          document.getElementById('f-end-date').value);
+    fd.append('endTime',          document.getElementById('f-end-time').value);
+    fd.append('status',           document.getElementById('f-status').value);
+    fd.append('maxRegistrations', document.getElementById('f-max-reg').value || '');
+    fd.append('published',        document.getElementById('f-published').checked);
+
+    const imageFile = document.getElementById('f-image').files[0];
+    if (imageFile) fd.append('image', imageFile);
+
+    let res;
+    res = editingId
+      ? await api.putForm(`/events/${editingId}`, fd)
+      : await api.postForm('/events', fd);
+
+    if (!res?.ok) throw new Error(res?.data?.message || 'Save failed');
+
+    Toast.success(editingId ? 'Event updated successfully!' : 'Event created successfully!');
+    closeModal('event-modal');
+    await loadEvents();
+  } catch (err) {
+    Toast.error(err.message || 'An error occurred.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingId ? '✓ Save Changes' : '✓ Create Event';
+  }
+}
+
+// ── DELETE EVENT ──────────────────────────────────────
+async function deleteEvent(id, title) {
+  const ok = await Confirm.show('Delete Event', `Are you sure you want to delete "${title}"? This cannot be undone.`);
+  if (!ok) return;
+  try {
+    const res = await api.delete(`/events/${id}`);
+    if (!res?.ok) throw new Error(res?.data?.message || 'Delete failed');
+    Toast.success('Event deleted.');
+    await loadEvents();
+  } catch (err) {
+    Toast.error(err.message || 'Could not delete event.');
+  }
+}
+
+// ── RESET FORM ────────────────────────────────────────
+function resetForm() {
+  ['f-title','f-description','f-location','f-start-date','f-start-time','f-end-date','f-end-time','f-max-reg'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-status').value = 'upcoming';
+  document.getElementById('f-published').checked = false;
+  updatePublishLabel();
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-image-preview').style.display = 'none';
+  document.getElementById('existing-image-wrap').style.display = 'none';
+}
+
+// ── PUBLISH TOGGLE ────────────────────────────────────
+document.getElementById('f-published').addEventListener('change', updatePublishLabel);
+function updatePublishLabel() {
+  document.getElementById('published-label').textContent =
+    document.getElementById('f-published').checked ? 'Published' : 'Draft';
+}
+
+// ── IMAGE ─────────────────────────────────────────────
+setupImagePreview('f-image', 'f-image-preview');
+setupDropzone('image-dropzone');
+
+// ── SEARCH & FILTER ───────────────────────────────────
+document.getElementById('search-input').addEventListener('input',   applyFilters);
+document.getElementById('filter-status').addEventListener('change', applyFilters);
+
+// ── MODAL CLOSE ON OVERLAY ────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── BOOTSTRAP ────────────────────────────────────────
+loadEvents();
+</script>
+</body>
+</html>

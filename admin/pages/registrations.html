@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrations — Apex Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+  <style>
+    /* ── REGISTRATIONS-SPECIFIC ─────────────────────── */
+
+    /* Stats row */
+    .reg-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .reg-stats-row { grid-template-columns: 1fr 1fr; } }
+
+    .mini-stat {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mini-stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .mini-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.4rem; font-weight: 800;
+      line-height: 1; color: var(--text);
+    }
+    .mini-stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Toolbar */
+    .reg-toolbar {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-icon {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted); pointer-events: none; font-size: 0.9rem;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem; font-family: var(--font);
+      color: var(--text); background: var(--bg); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+      background: #fff;
+    }
+    .filter-select {
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem; font-family: var(--font);
+      color: var(--text-2); background: #fff;
+      cursor: pointer; outline: none;
+      transition: border-color .15s;
+    }
+    .filter-select:focus { border-color: var(--orange); }
+
+    /* Export button */
+    .btn-export {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.82rem; font-family: var(--font);
+      font-weight: 600; color: var(--text-2);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .btn-export:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-bg);
+    }
+
+    /* Table card */
+    .table-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .table-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .table-card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 700; color: var(--text);
+    }
+    .table-card-count {
+      font-size: 0.78rem; color: var(--text-muted);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 99px; padding: 2px 10px;
+    }
+
+    /* Registrant avatar */
+    .reg-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--orange-pale);
+      border: 1.5px solid var(--orange-pale2);
+      display: grid; place-items: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--orange-dark);
+      flex-shrink: 0;
+    }
+
+    .reg-name-cell { max-width: 200px; }
+    .reg-name-text {
+      font-weight: 600; color: var(--text);
+      font-size: 0.875rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: block;
+    }
+    .reg-email-text {
+      font-size: 0.72rem; color: var(--text-muted);
+      margin-top: 1px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: block;
+      max-width: 200px;
+    }
+
+    /* Skeleton shimmer */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--border-light) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* Pagination */
+    .pagination { display: flex; align-items: center; gap: 4px; padding: 14px 20px; border-top: 1px solid var(--border); }
+    .page-info { font-size: 0.82rem; color: var(--text-muted); margin-right: auto; }
+    .page-btn {
+      width: 30px; height: 30px;
+      border-radius: 6px; border: 1.5px solid var(--border);
+      background: #fff; cursor: pointer;
+      font-size: 0.8rem; font-family: var(--font);
+      color: var(--text-2);
+      display: grid; place-items: center;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+    .page-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; font-weight: 600; }
+    .page-btn:disabled { opacity: .4; cursor: default; }
+
+    /* Empty state */
+    .empty-row td {
+      text-align: center;
+      padding: 60px 20px !important;
+    }
+    .empty-row .empty-state { padding: 0; }
+
+    /* Responsive table */
+    @media (max-width: 900px) {
+      .data-table th:nth-child(n+4),
+      .data-table td:nth-child(n+4) { display: none; }
+    }
+    @media (max-width: 600px) {
+      .data-table th:nth-child(n+3),
+      .data-table td:nth-child(n+3) { display: none; }
+      .reg-toolbar { gap: 8px; }
+    }
+
+    /* ── VIEW DETAIL MODAL ──────────────────────────── */
+    .modal-wide { max-width: 560px; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 480px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    .detail-item { display: flex; flex-direction: column; gap: 3px; }
+    .detail-label {
+      font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .04em;
+      color: var(--text-muted);
+    }
+    .detail-value {
+      font-size: 0.875rem; color: var(--text);
+      font-weight: 500; word-break: break-word;
+    }
+    .detail-value a {
+      color: var(--orange); text-decoration: none;
+    }
+    .detail-value a:hover { text-decoration: underline; }
+
+    .detail-avatar-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+    }
+    .detail-big-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--orange-pale);
+      border: 2px solid var(--orange-pale2);
+      display: grid; place-items: center;
+      font-size: 1.4rem; font-weight: 800;
+      color: var(--orange-dark);
+      flex-shrink: 0;
+    }
+    .detail-avatar-name {
+      font-family: var(--font-display);
+      font-size: 1.05rem; font-weight: 700; color: var(--text);
+    }
+    .detail-avatar-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 1px; }
+
+    .detail-divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 18px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ── SIDEBAR ROOT ──────────────────────────────── -->
+  <div id="sidebar-root"></div>
+
+  <!-- ── MAIN CONTENT ─────────────────────────────── -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger">☰</button>
+        <div>
+          <div class="topbar-title">Registrations</div>
+          <div class="topbar-breadcrumb">Admin / Registrations</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-export" id="export-csv-btn" onclick="exportCSV()">
+          ⬇ Export CSV
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Stats -->
+      <div class="reg-stats-row">
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--orange-pale)">📋</div>
+          <div>
+            <div class="mini-stat-value" id="stat-total">—</div>
+            <div class="mini-stat-label">Total Registrations</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--green-bg)">🏢</div>
+          <div>
+            <div class="mini-stat-value" id="stat-orgs">—</div>
+            <div class="mini-stat-label">Organisations</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--blue-bg)">🎭</div>
+          <div>
+            <div class="mini-stat-value" id="stat-roles">—</div>
+            <div class="mini-stat-label">Roles</div>
+          </div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-icon" style="background:var(--yellow-bg)">📅</div>
+          <div>
+            <div class="mini-stat-value" id="stat-today">—</div>
+            <div class="mini-stat-label">Registered Today</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="reg-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="search-input"
+                 placeholder="Search by name, email, mobile, org…" />
+        </div>
+        <select id="filter-role" class="filter-select">
+          <option value="">All Roles</option>
+        </select>
+        <select id="filter-date" class="filter-select">
+          <option value="">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+
+      <!-- Table Card -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="table-card-title">All Registrations</span>
+            <span class="table-card-count" id="visible-count">0 entries</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="reg-table">
+            <thead>
+              <tr>
+                <th style="width:44px"></th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Role</th>
+                <th>Organisation</th>
+                <th>Registered</th>
+                <th style="width:96px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reg-tbody">
+              <tr>
+                <td colspan="8" style="padding:60px;text-align:center;">
+                  <div class="loader"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination" style="display:none">
+          <div class="page-info" id="page-info"></div>
+          <div id="page-buttons" style="display:flex;gap:4px;"></div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-layout -->
+
+
+<!-- ══════════════════════════════════════════════
+     VIEW DETAIL MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title">Registration Details</div>
+      <button class="modal-close" onclick="closeModal('view-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="view-modal-body">
+      <!-- populated by JS -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="view-delete-btn">🗑 Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal('view-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── SCRIPTS ─────────────────────────────────── -->
+<script src="../js/api.js"></script>
+<script>
+  // ── SIDEBAR LOGO PATCH ────────────────────────────────
+  // Replaces the sidebar brand area with the official Apex logo.
+  // Resilient selector cascade handles any class name the template uses.
+  function patchSidebarLogo() {
+    const LOGO_HTML = `
+      <img
+        src="../assets/logo.png"
+        alt="Apex Startup Group"
+        style="
+          width: 52px;
+          height: 52px;
+          object-fit: contain;
+          border-radius: 10px;
+          display: block;
+          flex-shrink: 0;
+        "
+      />
+      <div>
+        <div style="
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: 0.01em;
+          line-height: 1.1;
+        ">Apex</div>
+        <div style="
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 2px;
+        ">Admin Panel</div>
+      </div>
+`;
+    const selectors = [
+      '.sidebar-brand', '.sidebar-logo', '.sidebar-header',
+      '.nav-brand', '.logo-wrap', '.sidebar > .brand',
+      '.sidebar > div:first-child', '.sidebar > nav > div:first-child',
+      'aside > div:first-child',
+    ];
+    let brandEl = null;
+    for (const sel of selectors) {
+      brandEl = document.querySelector(sel);
+      if (brandEl) break;
+    }
+    if (!brandEl) {
+      const root = document.getElementById('sidebar-root');
+      if (root) brandEl = root.querySelector('div');
+    }
+    if (brandEl) {
+      brandEl.style.cssText += 'display:flex!important;align-items:center!important;gap:12px!important;padding:20px 16px 16px!important;';
+      brandEl.innerHTML = LOGO_HTML;
+    }
+  }
+
+/* ═══════════════════════════════════════════════
+   REGISTRATIONS PAGE
+═══════════════════════════════════════════════ */
+
+// ── AUTH GUARD ────────────────────────────────
+if (!Auth.requireAuth()) { throw new Error('Not authenticated'); }
+
+// ── INIT SHARED COMPONENTS ────────────────────
+document.getElementById('sidebar-root').innerHTML = renderSidebarLayout('registrations');
+  Sidebar.init();
+  patchSidebarLogo();
+Confirm.init();
+Toast.init();
+
+// Close modals when clicking overlay backdrop
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── STATE ─────────────────────────────────────
+let allRegs      = [];
+let filteredRegs = [];
+let currentPage  = 1;
+const PER_PAGE   = 15;
+let viewingId    = null;
+
+// ── HELPERS ───────────────────────────────────
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() &&
+         d.getMonth()    === now.getMonth()    &&
+         d.getDate()     === now.getDate();
+}
+
+function isThisWeek(dateStr) {
+  if (!dateStr) return false;
+  const d   = new Date(dateStr);
+  const now = new Date();
+  const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+  return d >= weekAgo && d <= now;
+}
+
+function isThisMonth(dateStr) {
+  if (!dateStr) return false;
+  const d   = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+// ── LOAD REGISTRATIONS ────────────────────────
+async function loadRegistrations() {
+  const tbody = document.getElementById('reg-tbody');
+  tbody.innerHTML = `<tr><td colspan="8" style="padding:60px;text-align:center;"><div class="loader"></div></td></tr>`;
+
+  try {
+    const res = await api.get('/registrations');
+    if (!res?.ok) throw new Error(res?.data?.message || 'Failed to load');
+
+    allRegs = res.data?.registrations || res.data?.data || res.data || [];
+    if (!Array.isArray(allRegs)) allRegs = [];
+
+    updateStats();
+    populateFilterDropdowns();
+    applyFilters();
+  } catch (err) {
+    tbody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="8">
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-title">Failed to load registrations</div>
+            <div class="empty-state-desc">${esc(err.message)}</div>
+            <button class="btn btn-primary" onclick="loadRegistrations()">Retry</button>
+          </div>
+        </td>
+      </tr>`;
+    Toast.error(err.message || 'Could not load registrations.');
+  }
+}
+
+// ── STATS ─────────────────────────────────────
+function updateStats() {
+  const orgs  = new Set(allRegs.map(r => r.orgName).filter(Boolean));
+  const roles  = new Set(allRegs.map(r => r.role).filter(Boolean));
+  const today  = allRegs.filter(r => isToday(r.createdAt));
+
+  document.getElementById('stat-total').textContent = allRegs.length;
+  document.getElementById('stat-orgs').textContent  = orgs.size;
+  document.getElementById('stat-roles').textContent = roles.size;
+  document.getElementById('stat-today').textContent = today.length;
+}
+
+// ── POPULATE FILTER DROPDOWNS ─────────────────
+function populateFilterDropdowns() {
+  const roleSelect = document.getElementById('filter-role');
+  const currentVal = roleSelect.value;
+
+  // Collect unique, sorted roles from data
+  const roles = [...new Set(allRegs.map(r => r.role).filter(Boolean))].sort();
+
+  // Rebuild options, preserving current selection
+  roleSelect.innerHTML = '<option value="">All Roles</option>' +
+    roles.map(r => `<option value="${esc(r)}"${r === currentVal ? ' selected' : ''}>${esc(r)}</option>`).join('');
+}
+
+// ── FILTERS ───────────────────────────────────
+function applyFilters() {
+  const q         = document.getElementById('search-input').value.toLowerCase().trim();
+  const role      = document.getElementById('filter-role').value;
+  const dateRange = document.getElementById('filter-date').value;
+
+  filteredRegs = allRegs.filter(r => {
+    if (q) {
+      const haystack = [r.fullName, r.email, r.mobile, r.role, r.orgName]
+        .join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (role && r.role !== role) return false;
+    if (dateRange === 'today' && !isToday(r.createdAt)) return false;
+    if (dateRange === 'week'  && !isThisWeek(r.createdAt)) return false;
+    if (dateRange === 'month' && !isThisMonth(r.createdAt)) return false;
+
+    return true;
+  });
+
+  currentPage = 1;
+  renderTable();
+}
+
+// ── RENDER TABLE ──────────────────────────────
+function renderTable() {
+  const tbody   = document.getElementById('reg-tbody');
+  const total   = filteredRegs.length;
+  const pages   = Math.ceil(total / PER_PAGE) || 1;
+  currentPage   = Math.min(currentPage, pages);
+
+  const start = (currentPage - 1) * PER_PAGE;
+  const slice = filteredRegs.slice(start, start + PER_PAGE);
+
+  document.getElementById('visible-count').textContent =
+    `${total} ${total === 1 ? 'entry' : 'entries'}`;
+
+  if (slice.length === 0) {
+    tbody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="8">
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-title">No registrations found</div>
+            <div class="empty-state-desc">
+              ${allRegs.length === 0
+                ? 'No registrations have been submitted yet.'
+                : 'Try adjusting your search or filters.'}
+            </div>
+          </div>
+        </td>
+      </tr>`;
+  } else {
+    tbody.innerHTML = slice.map(r => {
+      const id      = r._id || r.id;
+      const name    = r.fullName || '—';
+      const email   = r.email   || '—';
+      const mobile  = r.mobile  || '—';
+      const role    = r.role    || '—';
+      const orgName = r.orgName || '—';
+
+      return `
+        <tr>
+          <td>
+            <div class="reg-avatar">${esc(initials(name))}</div>
+          </td>
+          <td>
+            <div class="reg-name-cell">
+              <span class="reg-name-text" title="${esc(name)}">${esc(name)}</span>
+              <span class="reg-email-text" title="${esc(email)}">${esc(email)}</span>
+            </div>
+          </td>
+          <td style="font-size:.82rem;color:var(--text-2)">${esc(email)}</td>
+          <td style="font-size:.82rem;color:var(--text-2)">${esc(mobile)}</td>
+          <td>
+            <span class="badge badge-orange" style="font-size:.7rem">${esc(role)}</span>
+          </td>
+          <td style="font-size:.82rem;color:var(--text-2);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(orgName)}">${esc(orgName)}</td>
+          <td style="font-size:.8rem;color:var(--text-muted);white-space:nowrap">${fmtDate(r.createdAt)}</td>
+          <td>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="action-btn view"   onclick="viewReg('${id}')"   title="View Details">👁</button>
+              <button class="action-btn delete" onclick="deleteReg('${id}', '${esc(name)}')" title="Delete">🗑</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  renderPagination(total, pages);
+}
+
+// ── PAGINATION ────────────────────────────────
+function renderPagination(total, pages) {
+  const pag = document.getElementById('pagination');
+  const info = document.getElementById('page-info');
+  const btns = document.getElementById('page-buttons');
+
+  if (total === 0 || pages <= 1) {
+    pag.style.display = 'none';
+    return;
+  }
+  pag.style.display = 'flex';
+
+  const start = (currentPage - 1) * PER_PAGE + 1;
+  const end   = Math.min(currentPage * PER_PAGE, total);
+  info.textContent = `${start}–${end} of ${total}`;
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+
+  for (let i = 1; i <= pages; i++) {
+    if (pages > 7 && (i > 2 && i < pages - 1 && Math.abs(i - currentPage) > 1)) {
+      if (i === 3 || i === pages - 2) html += `<button class="page-btn" disabled>…</button>`;
+      continue;
+    }
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === pages ? 'disabled' : ''}>›</button>`;
+  btns.innerHTML = html;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filteredRegs.length / PER_PAGE);
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── VIEW DETAIL MODAL ─────────────────────────
+function viewReg(id) {
+  const r = allRegs.find(r => (r._id || r.id) === id);
+  if (!r) return;
+
+  viewingId = id;
+  const name    = r.fullName || '—';
+  const email   = r.email   || '—';
+  const mobile  = r.mobile  || '—';
+  const role    = r.role    || '—';
+  const orgName = r.orgName || '—';
+
+  document.getElementById('view-modal-body').innerHTML = `
+    <div class="detail-avatar-row">
+      <div class="detail-big-avatar">${esc(initials(name))}</div>
+      <div>
+        <div class="detail-avatar-name">${esc(name)}</div>
+        <div class="detail-avatar-sub">${esc(role)} &middot; ${esc(orgName)}</div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">Full Name</div>
+        <div class="detail-value">${esc(name)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Role</div>
+        <div class="detail-value">${esc(role)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Email</div>
+        <div class="detail-value"><a href="mailto:${esc(email)}">${esc(email)}</a></div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Mobile</div>
+        <div class="detail-value"><a href="tel:${esc(mobile)}">${esc(mobile)}</a></div>
+      </div>
+      <div class="detail-item" style="grid-column:1/-1">
+        <div class="detail-label">Organisation</div>
+        <div class="detail-value">${esc(orgName)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Registration Date</div>
+        <div class="detail-value">${fmtDateTime(r.createdAt)}</div>
+      </div>
+      ${r._id || r.id ? `
+      <div class="detail-item">
+        <div class="detail-label">ID</div>
+        <div class="detail-value" style="font-size:.75rem;font-family:monospace;color:var(--text-muted)">${esc(r._id || r.id)}</div>
+      </div>` : ''}
+    </div>
+  `;
+
+  document.getElementById('view-delete-btn').onclick = () => {
+    closeModal('view-modal');
+    deleteReg(id, name);
+  };
+
+  openModal('view-modal');
+}
+
+// ── DELETE REGISTRATION ───────────────────────
+async function deleteReg(id, name) {
+  const ok = await Confirm.show(
+    'Delete Registration',
+    `Are you sure you want to delete the registration for "${name}"? This action cannot be undone.`
+  );
+  if (!ok) return;
+
+  try {
+    const res = await api.delete(`/registrations/${id}`);
+    if (!res?.ok) throw new Error(res?.data?.message || 'Delete failed');
+    Toast.success('Registration deleted successfully.');
+    allRegs = allRegs.filter(r => (r._id || r.id) !== id);
+    updateStats();
+    populateFilterDropdowns();
+    applyFilters();
+  } catch (err) {
+    Toast.error(err.message || 'Could not delete registration.');
+  }
+}
+
+// ── EXPORT CSV ────────────────────────────────
+function exportCSV() {
+  const data = filteredRegs.length > 0 ? filteredRegs : allRegs;
+  if (data.length === 0) {
+    Toast.info('No registrations to export.');
+    return;
+  }
+
+  const headers = ['Full Name', 'Email', 'Mobile', 'Role', 'Organisation', 'Registration Date'];
+  const rows = data.map(r => [
+    r.fullName || '',
+    r.email    || '',
+    r.mobile   || '',
+    r.role     || '',
+    r.orgName  || '',
+    r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '',
+  ].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
+
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const ts   = new Date().toISOString().slice(0, 10);
+
+  link.href     = url;
+  link.download = `registrations-${ts}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+
+  Toast.success(`Exported ${data.length} registrations as CSV.`);
+}
+
+// ── FILTER EVENT LISTENERS ────────────────────
+document.getElementById('search-input').addEventListener('input', applyFilters);
+document.getElementById('filter-role').addEventListener('change', applyFilters);
+document.getElementById('filter-date').addEventListener('change', applyFilters);
+
+// ── BOOTSTRAP ─────────────────────────────────
+loadRegistrations();
+</script>
+</body>
+</html>

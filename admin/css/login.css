@@ -1,0 +1,269 @@
+/* ══════════════════════════════════════════════════════
+   APEX ADMIN — Login Page Styles (admin/css/login.css)
+   Complements admin.css; scoped to login page only.
+══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
+
+/* ── Page shell ─────────────────────────────────────── */
+body {
+  background: #080C14;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Background atmosphere ─────────────────────────── */
+.bg-layer        { position: absolute; inset: 0; pointer-events: none; }
+.bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.bg-glow-left {
+  position: absolute;
+  width: 600px; height: 600px;
+  left: -120px; top: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle, rgba(249,115,22,.09) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.bg-glow-right {
+  position: absolute;
+  width: 400px; height: 400px;
+  right: -60px; top: 20%;
+  background: radial-gradient(circle, rgba(249,115,22,.05) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.bg-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(8,12,20,.8) 100%);
+}
+
+/* ── Login wrapper ──────────────────────────────────── */
+.login-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeUp .5s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Brand header ───────────────────────────────────── */
+.brand-header   { text-align: center; margin-bottom: 32px; }
+
+.brand-logomark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px; height: 64px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.brand-logomark-bg {
+  position: absolute; inset: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #F97316 0%, #FB923C 50%, #FDBA74 100%);
+  box-shadow:
+    0 0 0 1px rgba(249,115,22,.5),
+    0 8px 24px rgba(249,115,22,.35),
+    0 2px 6px rgba(249,115,22,.2);
+}
+.brand-logomark svg {
+  position: relative; z-index: 1;
+  width: 32px; height: 32px; color: #fff;
+}
+
+.brand-wordmark {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.55rem; font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.brand-wordmark em {
+  font-style: normal;
+  background: linear-gradient(90deg, #F97316 0%, #FB923C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  margin-top: 6px;
+}
+.brand-tagline::before,
+.brand-tagline::after {
+  content: '';
+  display: block;
+  width: 24px; height: 1px;
+  background: rgba(255,255,255,.15);
+}
+
+/* ── Login card ─────────────────────────────────────── */
+.login-card {
+  width: 100%;
+  background: rgba(255,255,255,.98);
+  border-radius: 20px;
+  padding: 36px 36px 32px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.06),
+    0 2px 4px rgba(0,0,0,.08),
+    0 12px 32px rgba(0,0,0,.28),
+    0 40px 80px rgba(0,0,0,.2);
+}
+
+.card-heading              { margin-bottom: 28px; }
+.card-heading h1 {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.35rem; font-weight: 800;
+  color: #0F172A; letter-spacing: -0.02em; margin-bottom: 4px;
+}
+.card-heading p            { font-size: .85rem; color: #64748B; }
+
+/* ── Inputs ─────────────────────────────────────────── */
+.form-group                { margin-bottom: 16px; }
+label {
+  display: block;
+  font-size: .8rem; font-weight: 600;
+  color: #334155; margin-bottom: 6px; letter-spacing: .01em;
+}
+
+.input-wrap                { position: relative; }
+.input-icon {
+  position: absolute; left: 13px; top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8; pointer-events: none;
+  display: flex; align-items: center;
+}
+.input-icon svg            { width: 15px; height: 15px; }
+
+input[type=email],
+input[type=password] {
+  width: 100%;
+  padding: 11px 12px 11px 40px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: .875rem;
+  font-family: 'Inter', sans-serif;
+  color: #0F172A;
+  background: #FAFBFD;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+input[type=email]:focus,
+input[type=password]:focus {
+  border-color: #F97316;
+  box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+  background: #fff;
+}
+input::placeholder         { color: #B0BBCA; }
+
+.pw-toggle {
+  position: absolute; right: 11px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: #94A3B8; padding: 4px;
+  display: flex; align-items: center;
+  border-radius: 5px; transition: color .15s;
+}
+.pw-toggle:hover           { color: #334155; }
+.pw-toggle svg             { width: 15px; height: 15px; }
+
+/* ── Remember ───────────────────────────────────────── */
+.remember-row {
+  display: flex; align-items: center;
+  gap: 8px; margin-bottom: 20px;
+  font-size: .84rem; color: #334155;
+}
+.remember-row input[type=checkbox] {
+  accent-color: #F97316;
+  width: 15px; height: 15px; cursor: pointer;
+}
+.remember-row label        { margin: 0; cursor: pointer; font-weight: 500; font-size: .84rem; }
+
+/* ── Error ──────────────────────────────────────────── */
+.error-msg {
+  display: none;
+  background: #FEF2F2; border: 1px solid #FCA5A5;
+  color: #DC2626; border-radius: 9px;
+  padding: 10px 14px; font-size: .83rem; margin-bottom: 16px;
+  align-items: flex-start; gap: 8px;
+}
+.error-msg.show            { display: flex; }
+.error-msg svg             { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Sign-in button ─────────────────────────────────── */
+.btn-login {
+  width: 100%; padding: 12.5px;
+  background: linear-gradient(135deg, #F97316 0%, #EA6A0A 100%);
+  color: #fff; border: none; border-radius: 10px;
+  font-family: 'Sora', sans-serif;
+  font-size: .93rem; font-weight: 700; cursor: pointer;
+  transition: opacity .15s, transform .1s, box-shadow .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 4px 14px rgba(249,115,22,.35);
+  letter-spacing: .01em;
+}
+.btn-login:hover           { opacity: .92; box-shadow: 0 6px 20px rgba(249,115,22,.45); }
+.btn-login:active          { transform: scale(.985); }
+.btn-login:disabled        { opacity: .6; cursor: not-allowed; }
+
+/* spinner */
+.spinner {
+  width: 17px; height: 17px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+  display: none;
+}
+.btn-login.loading .spinner  { display: block; }
+.btn-login.loading .btn-text { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Card footer ────────────────────────────────────── */
+.login-card-footer {
+  margin-top: 20px; padding-top: 18px;
+  border-top: 1px solid #F1F5F9;
+  display: flex; align-items: center;
+  justify-content: center; gap: 6px;
+}
+.security-badge {
+  display: inline-flex; align-items: center;
+  gap: 5px; font-size: .73rem;
+  color: #94A3B8; font-weight: 500;
+}
+.security-badge svg        { width: 12px; height: 12px; color: #10B981; }
+
+.login-below {
+  margin-top: 20px; text-align: center;
+  font-size: .73rem; color: rgba(255,255,255,.2);
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 480px) {
+  .login-card         { padding: 28px 22px 24px; border-radius: 16px; }
+  .brand-wordmark     { font-size: 1.3rem; }
+}

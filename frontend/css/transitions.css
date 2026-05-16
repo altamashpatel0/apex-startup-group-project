@@ -1,0 +1,70 @@
+/* ══════════════════════════════════════════════════════
+   PAGE TRANSITIONS  — transitions.css
+   Drop this <link> into every page's <head> AFTER your
+   existing stylesheet.
+══════════════════════════════════════════════════════ */
+
+/* ── Entry keyframe: fade in + subtle upward drift ── */
+@keyframes pt-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Exit keyframe: fade out + slight upward drift ── */
+@keyframes pt-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* ── Page wrapper states ─────────────────────────── */
+
+/*
+  Default body state: invisible until JS kicks in.
+  The JS adds .pt-ready immediately so there's no
+  flash — the animation starts right away.
+*/
+body.pt-init {
+  opacity: 0;
+}
+
+/* Play enter animation as soon as body is ready */
+body.pt-ready {
+  animation: pt-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Play exit animation when a link is clicked */
+body.pt-leaving {
+  animation: pt-exit 0.28s cubic-bezier(0.55, 0, 1, 0.45) both;
+  /* Block further interaction while exiting */
+  pointer-events: none;
+}
+
+/* ── Navigation bar: stays fully visible always ─── */
+#navbar {
+  /* Override any inherited opacity from body animation */
+  opacity: 1 !important;
+}
+
+/* ── Performance hint ────────────────────────────── */
+body {
+  will-change: opacity, transform;
+}
+
+/* ── Respect reduced-motion preference ──────────── */
+@media (prefers-reduced-motion: reduce) {
+  body.pt-ready   { animation: none; opacity: 1; }
+  body.pt-leaving { animation: none; opacity: 0; }
+  body.pt-init    { opacity: 0; }
+}
