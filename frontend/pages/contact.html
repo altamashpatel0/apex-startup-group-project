@@ -107,7 +107,7 @@
           <div class="fg"><label>Email</label><input type="email" placeholder="your@email.com" id="c-email"/></div>
           <div class="fg"><label>Phone</label><input type="tel" placeholder="+91 98765 43210" id="c-phone"/></div>
           <div class="fg"><label>Message</label><textarea rows="5" placeholder="Your message..." id="c-msg"></textarea></div>
-          <button class="btn btn-primary btn-full" onclick="submitContact()">Send Message ✈️</button>
+          <button class="btn btn-primary btn-full" id="contact-submit-btn" onclick="submitContact()">Send Message ✈️</button>
         </div>
       </div>
     </div>
@@ -127,5 +127,224 @@
 
 <div id="toast"></div>
 <script src="../js/main.js"></script>
+
+<!-- ══════════════════════════════════════════ CONTACT FORM HANDLER -->
+<style>
+  /* Minimal states — no existing styles modified */
+  #contact-submit-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  #contact-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(2rem);
+    background: #111827;
+    color: #fff;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  #contact-toast.contact-toast--show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #contact-toast.contact-toast--success {
+    border-left: 4px solid #22c55e;
+  }
+
+  #contact-toast.contact-toast--error {
+    border-left: 4px solid #ef4444;
+  }
+
+  .fg input.contact-field-error,
+  .fg textarea.contact-field-error {
+    border-color: #ef4444 !important;
+    outline: none;
+  }
+</style>
+
+<!-- Toast element used exclusively by contact form -->
+<div id="contact-toast" role="alert" aria-live="polite"></div>
+
+<script>
+  /* ─────────────────────────────────────────────────────────────
+   *  CONTACT FORM HANDLER
+   *  ─────────────────────────────────────────────────────────────
+   *
+   *  HOW TO FINALISE:
+   *  1. Replace CONTACT_FORM_ACTION_URL with your real Google Form
+   *     action URL (ends in /formResponse).
+   *  2. Replace each ENTRY_ID_* constant below with the actual
+   *     entry IDs from your Google Form fields.
+   *
+   *  To find entry IDs:
+   *    – Open the form → right-click any field → Inspect Element
+   *    – Look for `name="entry.XXXXXXXXX"` on the <input>
+   * ─────────────────────────────────────────────────────────────
+   */
+
+  // ── STEP 1: Replace with your final Google Form action URL ────
+  // Example: 'https://docs.google.com/forms/d/e/XXXX/formResponse'
+  const CONTACT_FORM_ACTION_URL =
+    'https://docs.google.com/forms/u/0/d/e/1FAIpQLSeFNlCq0o7zRh6FWTaT5s5YC5D00TrqDVovR2-ygJGv7EOQTA/formResponse';
+
+  // ── STEP 2: Replace these with actual entry IDs from your form ─
+  const CONTACT_ENTRY_IDS = {
+    name:    'entry.REPLACE_NAME_ENTRY_ID',    // Name field
+    email:   'entry.REPLACE_EMAIL_ENTRY_ID',   // Email field
+    phone:   'entry.REPLACE_PHONE_ENTRY_ID',   // Phone field
+    message: 'entry.REPLACE_MESSAGE_ENTRY_ID', // Message field
+  };
+
+  /* ── Toast notification helper ─────────────────────────────── */
+  function showContactToast(message, type = 'success') {
+    const toast = document.getElementById('contact-toast');
+    toast.textContent = message;
+    toast.className = `contact-toast--show contact-toast--${type}`;
+
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      toast.className = '';
+    }, 4000);
+  }
+
+  /* ── Validation helpers ─────────────────────────────────────── */
+  function isContactEmailValid(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  }
+
+  function isContactPhoneValid(phone) {
+    // Accepts: +91 98765 43210, 9876543210, +919876543210, etc.
+    return /^[\+]?[\d\s\-\(\)]{7,15}$/.test(phone.trim());
+  }
+
+  function clearContactFieldErrors() {
+    document.querySelectorAll('.contact-field-error').forEach(el => {
+      el.classList.remove('contact-field-error');
+    });
+  }
+
+  function markContactFieldError(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('contact-field-error');
+  }
+
+  /* ── Validate all required fields ──────────────────────────── */
+  function validateContactForm(fields) {
+    clearContactFieldErrors();
+    let valid = true;
+
+    if (!fields.name) {
+      markContactFieldError('c-name');
+      valid = false;
+    }
+
+    if (!fields.email || !isContactEmailValid(fields.email)) {
+      markContactFieldError('c-email');
+      valid = false;
+    }
+
+    if (!fields.phone || !isContactPhoneValid(fields.phone)) {
+      markContactFieldError('c-phone');
+      valid = false;
+    }
+
+    if (!fields.message) {
+      markContactFieldError('c-msg');
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  /* ── Clear all form fields ──────────────────────────────────── */
+  function clearContactForm() {
+    ['c-name', 'c-email', 'c-phone', 'c-msg'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+  }
+
+  /* ── Set button loading state ───────────────────────────────── */
+  function setContactSubmitLoading(isLoading) {
+    const btn = document.getElementById('contact-submit-btn');
+    if (!btn) return;
+    btn.disabled = isLoading;
+    btn.textContent = isLoading ? 'Submitting…' : 'Send Message ✈️';
+  }
+
+  /* ── Build FormData payload for Google Forms ────────────────── */
+  function buildContactFormData(fields) {
+    const data = new FormData();
+
+    // NOTE: Replace CONTACT_ENTRY_IDS values above to map to the correct fields.
+    // Temporarily using the short-URL form — entry IDs must be added manually.
+    data.append(CONTACT_ENTRY_IDS.name,    fields.name);
+    data.append(CONTACT_ENTRY_IDS.email,   fields.email);
+    data.append(CONTACT_ENTRY_IDS.phone,   fields.phone);
+    data.append(CONTACT_ENTRY_IDS.message, fields.message);
+
+    return data;
+  }
+
+  /* ── Main submit handler ────────────────────────────────────── */
+  async function submitContact() {
+    // Collect field values
+    const fields = {
+      name:    document.getElementById('c-name')?.value.trim()  || '',
+      email:   document.getElementById('c-email')?.value.trim() || '',
+      phone:   document.getElementById('c-phone')?.value.trim() || '',
+      message: document.getElementById('c-msg')?.value.trim()   || '',
+    };
+
+    // Client-side validation
+    if (!validateContactForm(fields)) {
+      showContactToast('Please fill in all required fields correctly.', 'error');
+      return;
+    }
+
+    setContactSubmitLoading(true);
+
+    try {
+      const formData = buildContactFormData(fields);
+
+      // Google Forms does not support CORS — we use no-cors mode.
+      // A successful submission returns an opaque response (status 0), which is expected.
+      await fetch(CONTACT_FORM_ACTION_URL, {
+        method: 'POST',
+        mode:   'no-cors', // Required for Google Forms cross-origin submission
+        body:   formData,
+      });
+
+      // With no-cors we cannot inspect the response, so we treat reaching
+      // this point as a successful submission.
+      clearContactForm();
+      clearContactFieldErrors();
+      showContactToast('Application submitted successfully.', 'success');
+
+    } catch (error) {
+      // Network-level failure (offline, DNS error, etc.)
+      console.error('[Contact Form] Submission error:', error);
+      showContactToast('Something went wrong. Please try again.', 'error');
+    } finally {
+      setContactSubmitLoading(false);
+    }
+  }
+</script>
+<!-- ══════════════════════════════════════════ END CONTACT FORM HANDLER -->
+
 </body>
 </html>
